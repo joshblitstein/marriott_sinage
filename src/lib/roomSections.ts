@@ -1,10 +1,10 @@
 import type { Room } from '../types';
 
-export type RoomSection = {
+export type RoomSection<T extends Room = Room> = {
   id: string;
   title: string;
   level: string;
-  rooms: Room[];
+  rooms: T[];
 };
 
 const SECTION_DEFS: {
@@ -67,9 +67,9 @@ const SECTION_DEFS: {
   },
 ];
 
-export function groupRoomsBySection(rooms: Room[]): RoomSection[] {
+export function groupRoomsBySection<T extends Room>(rooms: T[]): RoomSection<T>[] {
   const used = new Set<string>();
-  const sections: RoomSection[] = [];
+  const sections: RoomSection<T>[] = [];
 
   for (const def of SECTION_DEFS) {
     const matched = rooms.filter((r) => def.match(r));
