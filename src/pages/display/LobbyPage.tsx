@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { collection, doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { DisplayKioskControls } from '../../components/DisplayKioskControls';
 import { OrgLogo } from '../../components/OrgLogo';
 import { db } from '../../lib/firebase';
 import {
@@ -134,29 +135,32 @@ export function LobbyPage() {
   const slideProps: SlideProps = { events: visible, now, referenceNow };
 
   return (
-    <div className="lobby-stage">
-      <div key={active} className="lobby-stage__slide">
-        {active === 'directory' && <LobbyDirectory {...slideProps} />}
-        {active === 'welcome' && <LobbyWelcome {...slideProps} />}
-        {active === 'kiosk' && <LobbyKiosk {...slideProps} />}
-        {active === 'mosaic' && <LobbyMosaic {...slideProps} />}
-        {active === 'amenities' && <LobbyAmenities now={now} />}
-      </div>
-      {slides.length > 1 && (
-        <div className="lobby-stage__dots" aria-hidden>
-          {slides.map((id, i) => (
-            <span
-              key={id}
-              className={
-                i === slideIndex
-                  ? 'lobby-stage__dot is-active'
-                  : 'lobby-stage__dot'
-              }
-            />
-          ))}
+    <>
+      <DisplayKioskControls />
+      <div className="lobby-stage">
+        <div key={active} className="lobby-stage__slide">
+          {active === 'directory' && <LobbyDirectory {...slideProps} />}
+          {active === 'welcome' && <LobbyWelcome {...slideProps} />}
+          {active === 'kiosk' && <LobbyKiosk {...slideProps} />}
+          {active === 'mosaic' && <LobbyMosaic {...slideProps} />}
+          {active === 'amenities' && <LobbyAmenities now={now} />}
         </div>
-      )}
-    </div>
+        {slides.length > 1 && (
+          <div className="lobby-stage__dots" aria-hidden>
+            {slides.map((id, i) => (
+              <span
+                key={id}
+                className={
+                  i === slideIndex
+                    ? 'lobby-stage__dot is-active'
+                    : 'lobby-stage__dot'
+                }
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 

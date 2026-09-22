@@ -1,0 +1,18 @@
+{
+  "name": "Sheraton Charlotte Signage",
+  "short_name": "Signage",
+  "description": "Hotel digital door and lobby displays",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#111111",
+  "theme_color": "#0f6e7a",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { useParams } from 'react-router-dom';
+import { DisplayKioskControls } from '../../components/DisplayKioskControls';
 import { OrgLogo } from '../../components/OrgLogo';
 import { db } from '../../lib/firebase';
 import { pickCurrentAndNext } from '../../lib/schedule';
@@ -129,43 +130,49 @@ export function DisplayPage() {
 
   if (exists === false && !data) {
     return (
-      <div className="door-sign door-sign--error">
-        <header className="door-sign__brand">
-          <SheratonMark />
-        </header>
-        <main className="door-sign__main">
-          <p className="door-sign__eyebrow">Room not configured</p>
-          <h1 className="door-sign__room">{slug}</h1>
-          <p className="door-sign__muted">
-            This display slug was not found. Check the URL or activate the room
-            in Admin.
-          </p>
-        </main>
-        <footer className="door-sign__footer">
-          <span>{formatClock(now)}</span>
-        </footer>
-      </div>
+      <>
+        <DisplayKioskControls />
+        <div className="door-sign door-sign--error">
+          <header className="door-sign__brand">
+            <SheratonMark />
+          </header>
+          <main className="door-sign__main">
+            <p className="door-sign__eyebrow">Room not configured</p>
+            <h1 className="door-sign__room">{slug}</h1>
+            <p className="door-sign__muted">
+              This display slug was not found. Check the URL or activate the room
+              in Admin.
+            </p>
+          </main>
+          <footer className="door-sign__footer">
+            <span>{formatClock(now)}</span>
+          </footer>
+        </div>
+      </>
     );
   }
 
   if (data && data.active === false) {
     return (
-      <div className="door-sign door-sign--error">
-        <header className="door-sign__brand">
-          <SheratonMark />
-        </header>
-        <main className="door-sign__main">
-          <p className="door-sign__eyebrow">Room not configured</p>
-          <h1 className="door-sign__room">{data.displayName || slug}</h1>
-          <p className="door-sign__muted">
-            This room is inactive. Activate it in Admin to show live bookings.
-          </p>
-        </main>
-        <footer className="door-sign__footer">
-          <span>{formatLongDate(now)}</span>
-          <span>{formatClock(now)}</span>
-        </footer>
-      </div>
+      <>
+        <DisplayKioskControls />
+        <div className="door-sign door-sign--error">
+          <header className="door-sign__brand">
+            <SheratonMark />
+          </header>
+          <main className="door-sign__main">
+            <p className="door-sign__eyebrow">Room not configured</p>
+            <h1 className="door-sign__room">{data.displayName || slug}</h1>
+            <p className="door-sign__muted">
+              This room is inactive. Activate it in Admin to show live bookings.
+            </p>
+          </main>
+          <footer className="door-sign__footer">
+            <span>{formatLongDate(now)}</span>
+            <span>{formatClock(now)}</span>
+          </footer>
+        </div>
+      </>
     );
   }
 
@@ -181,27 +188,32 @@ export function DisplayPage() {
   };
 
   return (
-    <div className="door-stage">
-      <div key={slide} className="door-stage__slide">
-        {slide === 'classic' ? (
-          <DoorClassic {...props} />
-        ) : (
-          <DoorCards {...props} />
-        )}
+    <>
+      <DisplayKioskControls />
+      <div className="door-stage">
+        <div key={slide} className="door-stage__slide">
+          {slide === 'classic' ? (
+            <DoorClassic {...props} />
+          ) : (
+            <DoorCards {...props} />
+          )}
+        </div>
+        <div className="door-stage__dots" aria-hidden>
+          <span
+            className={
+              slide === 'classic'
+                ? 'door-stage__dot is-active'
+                : 'door-stage__dot'
+            }
+          />
+          <span
+            className={
+              slide === 'cards' ? 'door-stage__dot is-active' : 'door-stage__dot'
+            }
+          />
+        </div>
       </div>
-      <div className="door-stage__dots" aria-hidden>
-        <span
-          className={
-            slide === 'classic' ? 'door-stage__dot is-active' : 'door-stage__dot'
-          }
-        />
-        <span
-          className={
-            slide === 'cards' ? 'door-stage__dot is-active' : 'door-stage__dot'
-          }
-        />
-      </div>
-    </div>
+    </>
   );
 }
 
