@@ -12,11 +12,11 @@ Web digital signage for ballroom/conference rooms. Tablets at `/display/{slug}` 
 
 ```bash
 npm install
-cp .env.example .env.local   # already filled for marriot-project
+# Create .env.local with your Firebase web config (see Firebase console)
 npm run dev
 ```
 
-- Admin: http://localhost:5173/admin (user `admin` / password from `create-admin`)
+- Admin: http://localhost:5173/admin (create a user with `npm run create-admin -- admin 'your-password'`)
 - Display: http://localhost:5173/display/symphony-4
 
 ## Firestore rules (required)
@@ -37,8 +37,8 @@ service cloud.firestore {
 Then:
 
 ```bash
-npm run seed-rooms      # 37 rooms + combination aliases
-npm run create-admin    # admin / P98#slvfG5%
+npm run seed-rooms      # rooms + combination aliases
+npm run create-admin -- admin 'your-password'   # or set ADMIN_PASSWORD in .env.local
 npm run import-sample   # sample CITY xlsx
 ```
 

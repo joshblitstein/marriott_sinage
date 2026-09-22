@@ -2,11 +2,13 @@
 /**
  * Create (or overwrite) a staff account in the Firestore `users` collection.
  *
- * Default account: admin / P98#slvfG5%
+ * Password comes from CLI or ADMIN_PASSWORD in .env.local (never commit secrets).
  *
  * Usage:
+ *   npm run create-admin -- admin 'your-password'
+ *   # or set ADMIN_PASSWORD in .env.local, then:
  *   npm run create-admin
- *   npm run create-admin -- otheruser 'other-password'
+ *   npm run create-admin -- otheruser
  */
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -39,7 +41,7 @@ loadEnvFile(resolve(root, '.env.local'));
 loadEnvFile(resolve(root, '.env'));
 
 function userIdFromUsername(username) {
-  return username.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+  return username.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_');
 }
 
 function hashPassword(password) {
@@ -47,7 +49,14 @@ function hashPassword(password) {
 }
 
 const username = process.argv[2] ?? 'admin';
-const password = process.argv[3] ?? 'P98#slvfG5%';
+const password = process.argv[3] ?? process.env.ADMIN_PASSWORD;
+
+if (!password) {
+  console.error(
+    "Missing password. Pass it as an argument or set ADMIN_PASSWORD in .env.local:\n\n  npm run create-admin -- admin 'your-password'\n",
+  );
+  process.exit(1);
+}
 
 const firebaseConfig = {
   apiKey: process.env.VITE_FIREBASE_API_KEY,
