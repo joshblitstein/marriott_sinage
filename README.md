@@ -78,3 +78,4 @@ Parser lives in `src/lib/city/` so an API source can replace the file upload lat
 ## Design
 
 Door-sign UI follows `designs/Ballroom_Digital_Display_Templates.pdf` (ballroom door sign / template 02 landscape).
+# marriott_sinage
