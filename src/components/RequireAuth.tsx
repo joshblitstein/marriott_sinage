@@ -19,8 +19,9 @@ export function RequireAuth() {
       <div className="app-shell">
         <h1>Firebase not configured</h1>
         <p>
-          Copy <code>.env.example</code> to <code>.env.local</code> and add your
-          Firebase web app credentials.
+          Set the <code>VITE_FIREBASE_*</code> environment variables in Vercel
+          (Project → Settings → Environment Variables), then redeploy. Locally,
+          use <code>.env.local</code>.
         </p>
       </div>
     );
