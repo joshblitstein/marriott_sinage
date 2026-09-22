@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
   collection,
   deleteDoc,
@@ -22,17 +22,16 @@ import {
   formatTimeRange,
   HOTEL_TZ,
 } from '../../lib/time';
+import { isScreenOnline } from '../../lib/screenPresence';
 import type { DisplayEventSnapshot, Room, SignageEvent } from '../../types';
-
-const OFFLINE_MS = 10 * 60 * 1000;
-const STALE_MS = 60 * 60 * 1000;
 
 type RoomWithSeen = Room & {
   lastSeenAt?: string;
+  screenOnline?: boolean;
   scheduleDateKey?: string;
   scheduleEvents?: DisplayEventSnapshot[];
 };
-type ScreenStatus = 'online' | 'offline' | 'stale';
+type ScreenStatus = 'online' | 'offline';
 
 function shiftDateKey(dateKey: string, deltaDays: number): string {
   const [y, m, d] = dateKey.split('-').map(Number);
@@ -77,12 +76,11 @@ function formatMonthLabel(yearMonth: string): string {
   });
 }
 
-function screenStatus(lastSeenAt: string | undefined, nowMs: number): ScreenStatus {
-  if (!lastSeenAt) return 'offline';
-  const age = nowMs - new Date(lastSeenAt).getTime();
-  if (age < OFFLINE_MS) return 'online';
-  if (age < STALE_MS) return 'stale';
-  return 'offline';
+function screenStatus(
+  room: Pick<RoomWithSeen, 'lastSeenAt' | 'screenOnline'>,
+  nowMs: number,
+): ScreenStatus {
+  return isScreenOnline(room, nowMs) ? 'online' : 'offline';
 }
 
 /** Prefer the same embedded schedule the room tablets use when dates match. */
@@ -119,11 +117,13 @@ export function AdminDashboard() {
   const [editing, setEditing] = useState<SignageEvent | null>(null);
   const [view, setView] = useState<'day' | 'month'>('day');
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const [search, setSearch] = useState('');
+  const searchQuery = useDeferredValue(search.trim().toLowerCase());
 
   const yearMonth = dateKey.slice(0, 7);
 
   useEffect(() => {
-    const t = setInterval(() => setNowMs(Date.now()), 30_000);
+    const t = setInterval(() => setNowMs(Date.now()), 5_000);
     return () => clearInterval(t);
   }, []);
 
@@ -199,15 +199,50 @@ export function AdminDashboard() {
     [rooms],
   );
 
+  const roomById = useMemo(() => {
+    const map = new Map<string, RoomWithSeen>();
+    for (const room of rooms) map.set(room.id, room);
+    return map;
+  }, [rooms]);
+
+  function matchesSearch(
+    haystacks: Array<string | null | undefined>,
+    q: string,
+  ): boolean {
+    if (!q) return true;
+    return haystacks.some((h) => h?.toLowerCase().includes(q));
+  }
+
+  const filteredDayRooms = useMemo(() => {
+    if (!searchQuery) return activeRooms;
+    return activeRooms.filter((room) => {
+      if (
+        matchesSearch(
+          [room.displayName, room.name, room.id, ...(room.bookingAliases ?? [])],
+          searchQuery,
+        )
+      ) {
+        return true;
+      }
+      const snaps = snapshotsForRoom(room, dateKey, events);
+      return snaps.some((s) =>
+        matchesSearch(
+          [s.orgDisplayName, s.orgName, s.title, s.functionType],
+          searchQuery,
+        ),
+      );
+    });
+  }, [activeRooms, searchQuery, dateKey, events]);
+
   const sections = useMemo(
-    () => groupRoomsBySection(activeRooms),
-    [activeRooms],
+    () => groupRoomsBySection(filteredDayRooms),
+    [filteredDayRooms],
   );
 
   const summary = useMemo(() => {
     let eventCount = 0;
     let roomsInUse = 0;
-    for (const room of activeRooms) {
+    for (const room of filteredDayRooms) {
       const snaps = snapshotsForRoom(room, dateKey, events);
       if (snaps.length > 0) {
         roomsInUse += 1;
@@ -217,24 +252,42 @@ export function AdminDashboard() {
     return {
       eventCount,
       roomsInUse,
-      roomTotal: activeRooms.length,
+      roomTotal: searchQuery ? filteredDayRooms.length : activeRooms.length,
     };
-  }, [activeRooms, dateKey, events]);
+  }, [filteredDayRooms, activeRooms, dateKey, events, searchQuery]);
+
+  const filteredMonthEvents = useMemo(() => {
+    const visible = monthEvents.filter((e) => e.display !== false);
+    if (!searchQuery) return visible;
+    return visible.filter((ev) => {
+      const room = roomById.get(ev.roomId);
+      return matchesSearch(
+        [
+          ev.orgNameRaw,
+          ev.title,
+          ev.functionType,
+          room?.displayName,
+          room?.name,
+          room?.id,
+        ],
+        searchQuery,
+      );
+    });
+  }, [monthEvents, searchQuery, roomById]);
 
   const monthSummary = useMemo(() => {
-    const visible = monthEvents.filter((e) => e.display !== false);
     const byDay = new Map<string, SignageEvent[]>();
-    for (const ev of visible) {
+    for (const ev of filteredMonthEvents) {
       const list = byDay.get(ev.dateKey) ?? [];
       list.push(ev);
       byDay.set(ev.dateKey, list);
     }
     return {
-      eventCount: visible.length,
+      eventCount: filteredMonthEvents.length,
       daysWithEvents: byDay.size,
       byDay,
     };
-  }, [monthEvents]);
+  }, [filteredMonthEvents]);
 
   async function handleSaveEvent(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -422,10 +475,25 @@ export function AdminDashboard() {
           </button>
         </div>
 
+        <label className="hub-search">
+          <span className="visually-hidden">Search</span>
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search rooms, organizations, events…"
+            aria-label="Search rooms, organizations, or events"
+          />
+        </label>
+
         <p className="hub-schedule__summary">
           {view === 'day'
-            ? `${summary.eventCount} events · ${summary.roomsInUse} of ${summary.roomTotal} rooms in use`
-            : `${monthSummary.eventCount} events · ${monthSummary.daysWithEvents} days booked`}
+            ? `${summary.eventCount} events · ${summary.roomsInUse} of ${summary.roomTotal} rooms in use${
+                searchQuery ? ' · filtered' : ''
+              }`
+            : `${monthSummary.eventCount} events · ${monthSummary.daysWithEvents} days booked${
+                searchQuery ? ' · filtered' : ''
+              }`}
         </p>
       </div>
 
@@ -521,6 +589,14 @@ export function AdminDashboard() {
         />
       )}
 
+      {view === 'day' && sections.length === 0 && (
+        <p className="hub-search-empty">
+          {searchQuery
+            ? `No rooms, organizations, or events match “${search.trim()}”.`
+            : 'No active rooms.'}
+        </p>
+      )}
+
       {view === 'day' &&
         sections.map((section) => (
           <div key={section.id} className="hub-section">
@@ -532,9 +608,16 @@ export function AdminDashboard() {
               {section.rooms.map((room) => {
                 const snaps = snapshotsForRoom(room, dateKey, events);
                 const { primary } = pickCurrentAndNext(snaps, now, dateKey);
-                const status = screenStatus(room.lastSeenAt, nowMs);
+                const status = screenStatus(room, nowMs);
                 return (
-                  <article key={room.id} className="hub-room-card">
+                  <a
+                    key={room.id}
+                    className="hub-room-card"
+                    href={`/display/${room.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={`Open /display/${room.id}`}
+                  >
                     <div className="hub-room-card__top">
                       <h3>{room.displayName}</h3>
                       <StatusPill status={status} />
@@ -562,7 +645,11 @@ export function AdminDashboard() {
                           <button
                             type="button"
                             className="hub-room-card__edit"
-                            onClick={() => openEdit(primary)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              openEdit(primary);
+                            }}
                           >
                             Edit
                           </button>
@@ -571,7 +658,7 @@ export function AdminDashboard() {
                     ) : (
                       <p className="hub-room-card__empty">No events</p>
                     )}
-                  </article>
+                  </a>
                 );
               })}
             </div>
@@ -582,8 +669,7 @@ export function AdminDashboard() {
 }
 
 function StatusPill({ status }: { status: ScreenStatus }) {
-  const label =
-    status === 'online' ? 'Online' : status === 'stale' ? 'Stale' : 'Offline';
+  const label = status === 'online' ? 'Online' : 'Offline';
   return (
     <span className={`hub-status hub-status--${status}`}>
       <span className="hub-status__dot" aria-hidden />

@@ -7,7 +7,7 @@ import { dateKeyInHotelTz } from '../../lib/time';
 
 const NAV: { to: string; label: string; end?: boolean; soon?: boolean }[] = [
   { to: '/admin', label: 'Schedule', end: true },
-  { to: '/admin/floor-plan', label: 'Floor plan', soon: true },
+  { to: '/admin/floor-plan', label: 'Floor plan' },
   { to: '/admin/import', label: 'Import' },
   { to: '/admin/organizations', label: 'Organizations' },
   { to: '/admin/rooms', label: 'Rooms' },

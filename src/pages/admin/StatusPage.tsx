@@ -8,20 +8,26 @@ import {
 } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
 import { db } from '../../lib/firebase';
+import { isScreenOnline } from '../../lib/screenPresence';
 import type { Room } from '../../types';
 
-const OFFLINE_MS = 10 * 60 * 1000;
 const LOBBY_URL_PATH = '/display/lobby';
 
-type RoomWithSeen = Room & { lastSeenAt?: string };
+type RoomWithSeen = Room & {
+  lastSeenAt?: string;
+  screenOnline?: boolean;
+};
 
 export function StatusPage() {
   const [rooms, setRooms] = useState<RoomWithSeen[]>([]);
-  const [lobbyLastSeen, setLobbyLastSeen] = useState<string | null>(null);
+  const [lobbyPresence, setLobbyPresence] = useState<{
+    lastSeenAt?: string;
+    screenOnline?: boolean;
+  } | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 30_000);
+    const t = setInterval(() => setNow(Date.now()), 5_000);
     return () => clearInterval(t);
   }, []);
 
@@ -40,22 +46,29 @@ export function StatusPage() {
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'settings', 'lobby'), (snap) => {
       const data = snap.data();
-      setLobbyLastSeen(
-        data?.lastSeenAt ? String(data.lastSeenAt) : null,
+      setLobbyPresence(
+        data
+          ? {
+              lastSeenAt: data.lastSeenAt
+                ? String(data.lastSeenAt)
+                : undefined,
+              screenOnline: Boolean(data.screenOnline),
+            }
+          : null,
       );
     });
     return unsub;
   }, []);
 
-  const lobbyOnline = useMemo(() => {
-    if (!lobbyLastSeen) return false;
-    return now - new Date(lobbyLastSeen).getTime() < OFFLINE_MS;
-  }, [lobbyLastSeen, now]);
+  const lobbyOnline = useMemo(
+    () => isScreenOnline(lobbyPresence, now),
+    [lobbyPresence, now],
+  );
 
   const rows = useMemo(() => {
     return rooms.map((room) => {
+      const online = isScreenOnline(room, now);
       const last = room.lastSeenAt ? new Date(room.lastSeenAt).getTime() : 0;
-      const online = last > 0 && now - last < OFFLINE_MS;
       return { room, online, last };
     });
   }, [rooms, now]);
@@ -67,7 +80,10 @@ export function StatusPage() {
   return (
     <section>
       <h1>Screen status</h1>
-      <p>Offline if no heartbeat for more than 10 minutes.</p>
+      <p>
+        Online while the display URL is open in a browser tab. Offline when that
+        tab is closed (or if the tablet stops responding for ~45 seconds).
+      </p>
 
       <table className="table">
         <thead>
@@ -91,8 +107,8 @@ export function StatusPage() {
               {lobbyOnline ? 'Online' : 'Offline'}
             </td>
             <td>
-              {lobbyLastSeen
-                ? new Date(lobbyLastSeen).toLocaleString()
+              {lobbyPresence?.lastSeenAt
+                ? new Date(lobbyPresence.lastSeenAt).toLocaleString()
                 : 'Never'}
             </td>
             <td>

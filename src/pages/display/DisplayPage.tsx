@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { useParams } from 'react-router-dom';
 import { DisplayKioskControls } from '../../components/DisplayKioskControls';
 import { OrgLogo } from '../../components/OrgLogo';
+import { useScreenPresence } from '../../hooks/useScreenPresence';
 import { db } from '../../lib/firebase';
 import { pickCurrentAndNext } from '../../lib/schedule';
 import {
@@ -12,7 +13,6 @@ import {
 } from '../../lib/time';
 import type { DisplayEventSnapshot, RoomDisplayDoc } from '../../types';
 
-const HEARTBEAT_MS = 3 * 60 * 1000;
 const SLIDE_MS = 12_000;
 const CACHE_PREFIX = 'signage_display_';
 
@@ -51,6 +51,10 @@ export function DisplayPage() {
   const [now, setNow] = useState(() => new Date());
   const [offline, setOffline] = useState(!navigator.onLine);
   const [slide, setSlide] = useState<DoorSlide>('classic');
+
+  useScreenPresence(
+    slug && exists !== false ? ['rooms', slug] : null,
+  );
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
@@ -101,20 +105,6 @@ export function DisplayPage() {
     );
     return unsub;
   }, [slug]);
-
-  useEffect(() => {
-    if (!slug || exists === false) return;
-    const beat = () => {
-      void setDoc(
-        doc(db, 'rooms', slug),
-        { lastSeenAt: new Date().toISOString() },
-        { merge: true },
-      );
-    };
-    beat();
-    const t = setInterval(beat, HEARTBEAT_MS);
-    return () => clearInterval(t);
-  }, [slug, exists]);
 
   useEffect(() => {
     const t = setInterval(() => {

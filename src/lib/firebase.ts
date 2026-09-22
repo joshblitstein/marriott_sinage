@@ -7,7 +7,7 @@ import { getStorage, type FirebaseStorage } from 'firebase/storage';
  * Firebase web client config is public (security is Firestore rules + auth).
  * Env vars override these defaults when set (local .env.local / Vercel).
  */
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey:
     import.meta.env.VITE_FIREBASE_API_KEY ||
     'AIzaSyApVfspNTSOt00jqGiGbF2sjmgFe6jGPEs',

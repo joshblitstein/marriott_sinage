@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { collection, doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { DisplayKioskControls } from '../../components/DisplayKioskControls';
 import { OrgLogo } from '../../components/OrgLogo';
+import { useScreenPresence } from '../../hooks/useScreenPresence';
 import { db } from '../../lib/firebase';
 import {
   dateKeyInHotelTz,
@@ -35,9 +36,8 @@ export type LobbyEvent = {
 };
 
 type LobbyStatus = 'IN SESSION' | 'SET UP' | string;
-type SlideId = 'directory' | 'welcome' | 'kiosk' | 'mosaic' | 'amenities';
+type SlideId = 'directory' | 'welcome' | 'kiosk' | 'mosaic' | 'floorplan' | 'amenities';
 
-const HEARTBEAT_MS = 3 * 60 * 1000;
 const SLIDE_MS = 12_000;
 
 const BALLROOM_GROUPS: { prefix: string; label: string }[] = [
@@ -59,6 +59,8 @@ export function LobbyPage() {
   const [now, setNow] = useState(() => new Date());
   const [slideIndex, setSlideIndex] = useState(0);
 
+  useScreenPresence(['settings', 'lobby'], { id: 'lobby' });
+
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(t);
@@ -71,19 +73,6 @@ export function LobbyPage() {
       setRooms(list);
     });
     return unsub;
-  }, []);
-
-  useEffect(() => {
-    const beat = () => {
-      void setDoc(
-        doc(db, 'settings', 'lobby'),
-        { id: 'lobby', lastSeenAt: new Date().toISOString() },
-        { merge: true },
-      );
-    };
-    beat();
-    const t = setInterval(beat, HEARTBEAT_MS);
-    return () => clearInterval(t);
   }, []);
 
   const scheduleDateKey = useMemo(() => {
@@ -114,8 +103,8 @@ export function LobbyPage() {
   const slides: SlideId[] = useMemo(
     () =>
       visible.length === 0
-        ? ['amenities']
-        : ['directory', 'welcome', 'kiosk', 'mosaic'],
+        ? ['amenities', 'floorplan']
+        : ['directory', 'welcome', 'kiosk', 'mosaic', 'floorplan'],
     [visible.length],
   );
 
@@ -143,6 +132,7 @@ export function LobbyPage() {
           {active === 'welcome' && <LobbyWelcome {...slideProps} />}
           {active === 'kiosk' && <LobbyKiosk {...slideProps} />}
           {active === 'mosaic' && <LobbyMosaic {...slideProps} />}
+          {active === 'floorplan' && <LobbyFloorPlan now={now} />}
           {active === 'amenities' && <LobbyAmenities now={now} />}
         </div>
         {slides.length > 1 && (
@@ -375,6 +365,36 @@ function MosaicTile({
         <StatusBadge status={status} light />
       </div>
     </article>
+  );
+}
+
+/** Hotel meeting-space floor plans (from marriott.com events page) */
+function LobbyFloorPlan({ now }: { now: Date }) {
+  return (
+    <div className="lobby-floorplan">
+      <header className="lobby-floorplan__header">
+        <SheratonBrand />
+        <div className="lobby-floorplan__meta">
+          <span>{formatLongDate(now)}</span>
+          <span>{formatClock(now)}</span>
+        </div>
+      </header>
+      <h1 className="lobby-floorplan__title">Meeting space floor plans</h1>
+      <div className="lobby-floorplan__grid">
+        <figure>
+          <img
+            src="/floor-plans/cltwsf01.png"
+            alt="Sheraton Charlotte meeting room floor plan 1"
+          />
+        </figure>
+        <figure>
+          <img
+            src="/floor-plans/cltwsf02.png"
+            alt="Sheraton Charlotte meeting room floor plan 2"
+          />
+        </figure>
+      </div>
+    </div>
   );
 }
 

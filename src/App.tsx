@@ -3,6 +3,7 @@ import { RequireAuth } from './components/RequireAuth';
 import { AuthProvider } from './contexts/AuthContext';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminLayout } from './pages/admin/AdminLayout';
+import { FloorPlanPage } from './pages/admin/FloorPlanPage';
 import { ImportPage } from './pages/admin/ImportPage';
 import { LoginPage } from './pages/admin/LoginPage';
 import { OrganizationsPage } from './pages/admin/OrganizationsPage';
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/admin" element={<RequireAuth />}>
           <Route element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
+            <Route path="floor-plan" element={<FloorPlanPage />} />
             <Route path="import" element={<ImportPage />} />
             <Route path="organizations" element={<OrganizationsPage />} />
             <Route path="rooms" element={<RoomsPage />} />

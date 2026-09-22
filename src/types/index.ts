@@ -30,6 +30,9 @@ export type Room = {
   bookingAliases: string[];
   sortOrder: number;
   active: boolean;
+  /** Set by display tablet while /display/:slug is open */
+  screenOnline?: boolean;
+  lastSeenAt?: string;
 };
 
 export type Organization = {
