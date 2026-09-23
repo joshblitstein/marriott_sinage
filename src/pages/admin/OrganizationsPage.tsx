@@ -10,6 +10,7 @@ import {
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { OrgLogo } from '../../components/OrgLogo';
 import { useAuth } from '../../contexts/AuthContext';
+import { writeAuditLog } from '../../lib/audit';
 import { db, storage } from '../../lib/firebase';
 import { isAdmin } from '../../lib/roles';
 import { rebuildRoomDisplaysForDate } from '../../lib/schedule';
@@ -51,6 +52,20 @@ export function OrganizationsPage() {
   async function saveDisplayName(org: Organization, displayName: string) {
     await updateDoc(doc(db, 'organizations', org.id), { displayName });
     await rebuildRoomDisplaysForDate(db, dateKeyInHotelTz());
+    if (user) {
+      await writeAuditLog(db, {
+        actor: user,
+        action: 'org.rename',
+        entityType: 'organization',
+        entityId: org.id,
+        summary: `Renamed organization “${org.name}” to “${displayName}”`,
+        detail: {
+          orgName: org.name,
+          fromName: org.displayName,
+          toName: displayName,
+        },
+      });
+    }
   }
 
   async function uploadLogo(org: Organization, file: File) {
@@ -68,6 +83,19 @@ export function OrganizationsPage() {
       const logoUrl = await getDownloadURL(storageRef);
       await updateDoc(doc(db, 'organizations', org.id), { logoUrl });
       await rebuildRoomDisplaysForDate(db, dateKeyInHotelTz());
+      if (user) {
+        await writeAuditLog(db, {
+          actor: user,
+          action: 'org.logo.upload',
+          entityType: 'organization',
+          entityId: org.id,
+          summary: `Uploaded logo for ${org.displayName || org.name}`,
+          detail: {
+            orgName: org.displayName || org.name,
+            fileName: file.name,
+          },
+        });
+      }
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Logo upload failed';
@@ -84,6 +112,18 @@ export function OrganizationsPage() {
   async function clearLogo(org: Organization) {
     await updateDoc(doc(db, 'organizations', org.id), { logoUrl: null });
     await rebuildRoomDisplaysForDate(db, dateKeyInHotelTz());
+    if (user) {
+      await writeAuditLog(db, {
+        actor: user,
+        action: 'org.logo.remove',
+        entityType: 'organization',
+        entityId: org.id,
+        summary: `Removed logo for ${org.displayName || org.name}`,
+        detail: {
+          orgName: org.displayName || org.name,
+        },
+      });
+    }
   }
 
   return (

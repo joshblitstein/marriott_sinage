@@ -1,17 +1,22 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { writeAuditLog } from '../../lib/audit';
 import { db } from '../../lib/firebase';
-import { isAdmin } from '../../lib/roles';
+import { isAdmin, isLead, roleLabel } from '../../lib/roles';
 import { rebuildRoomDisplaysForDate } from '../../lib/schedule';
 import { dateKeyInHotelTz } from '../../lib/time';
+import { useEnsureTodaySchedule } from '../../hooks/useEnsureTodaySchedule';
 
 const NAV: {
   to: string;
   label: string;
   end?: boolean;
   soon?: boolean;
+  /** Admin-only tools */
   adminOnly?: boolean;
+  /** Admin + manager (accounts / activity log) */
+  leadOnly?: boolean;
 }[] = [
   { to: '/admin', label: 'Schedule', end: true },
   { to: '/admin/floor-plan', label: 'Floor plan', adminOnly: true },
@@ -19,8 +24,9 @@ const NAV: {
   { to: '/admin/organizations', label: 'Organizations' },
   { to: '/admin/rooms', label: 'Rooms', adminOnly: true },
   { to: '/admin/status', label: 'Screens', adminOnly: true },
+  { to: '/admin/accounts', label: 'Accounts', leadOnly: true },
   { to: '/admin/directory', label: 'Directory layout', soon: true, adminOnly: true },
-  { to: '/admin/history', label: 'History', soon: true, adminOnly: true },
+  { to: '/admin/history', label: 'History', leadOnly: true },
   { to: '/display/lobby', label: 'Preview', adminOnly: true },
 ];
 
@@ -29,14 +35,35 @@ export function AdminLayout() {
   const [publishing, setPublishing] = useState(false);
   const [staged, setStaged] = useState(1);
   const admin = isAdmin(user);
+  const lead = isLead(user);
 
-  const navItems = NAV.filter((item) => admin || !item.adminOnly);
+  useEnsureTodaySchedule(true);
+
+  const navItems = NAV.filter((item) => {
+    if (item.adminOnly && !admin) return false;
+    if (item.leadOnly && !lead) return false;
+    return true;
+  });
 
   async function publish() {
     setPublishing(true);
     try {
+      const count = staged;
       await rebuildRoomDisplaysForDate(db, dateKeyInHotelTz());
       setStaged(0);
+      if (user) {
+        await writeAuditLog(db, {
+          actor: user,
+          action: 'publish',
+          entityType: 'publish',
+          entityId: dateKeyInHotelTz(),
+          status: 'live',
+          summary:
+            count > 0
+              ? `Published ${count} change${count === 1 ? '' : 's'}`
+              : 'Published displays',
+        });
+      }
     } finally {
       setPublishing(false);
     }
@@ -128,7 +155,7 @@ export function AdminLayout() {
                   : 'Sign out'
               }
             >
-              {user?.role === 'manager' ? 'Manager' : 'Admin'}
+              {user ? roleLabel(user.role) : 'Sign out'}
             </button>
           </div>
         </div>

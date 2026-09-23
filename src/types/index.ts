@@ -1,10 +1,12 @@
 /** Domain types for Sheraton Charlotte digital signage */
 
+export type UserRole = 'admin' | 'manager' | 'user';
+
 export type AppUser = {
   id: string;
   username: string;
   name?: string;
-  role: 'admin' | 'manager';
+  role: UserRole;
 };
 
 export type UserSession = {
@@ -18,10 +20,48 @@ export type UserDocument = {
   email?: string;
   passwordHash: string;
   name?: string;
-  role: 'admin' | 'manager';
+  role: UserRole;
   active: boolean;
   createdAt: string;
+  updatedAt?: string;
 };
+
+/** Activity log for account + schedule/org changes */
+export type AuditAction =
+  | 'event.create'
+  | 'event.update'
+  | 'event.delete'
+  | 'org.logo.upload'
+  | 'org.logo.remove'
+  | 'org.rename'
+  | 'account.create'
+  | 'account.update'
+  | 'account.role_change'
+  | 'account.password_reset'
+  | 'account.activate'
+  | 'account.deactivate';
+
+export type AuditEntityType = 'event' | 'organization' | 'account' | 'publish' | 'system';
+
+export type AuditStatus = 'staged' | 'live' | 'alert';
+
+export type AuditLogEntry = {
+  id: string;
+  at: string;
+  actorId: string;
+  actorUsername: string;
+  /** Display name when known (shown as “M. Reyes”) */
+  actorName?: string;
+  actorRole: UserRole | 'system';
+  action: AuditAction | 'publish' | 'screen.offline' | 'import.city';
+  entityType: AuditEntityType;
+  entityId: string;
+  summary: string;
+  status: AuditStatus;
+  /** Extra structured detail for the history UI */
+  detail?: Record<string, string | null | undefined>;
+};
+
 
 export type Room = {
   id: string; // stable slug — never changes

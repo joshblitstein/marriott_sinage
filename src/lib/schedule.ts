@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   query,
   setDoc,
@@ -146,6 +147,31 @@ export function pickCurrentAndNext(
   return { current, next, primary, primaryMode, referenceTime: ref };
 }
 
-export async function ensureTodayDisplays(db: Firestore) {
-  await rebuildRoomDisplaysForDate(db, dateKeyInHotelTz());
+export async function ensureTodayDisplays(db: Firestore): Promise<boolean> {
+  const today = dateKeyInHotelTz();
+  const metaRef = doc(db, 'settings', 'schedule');
+
+  const [metaSnap, roomsSnap] = await Promise.all([
+    getDoc(metaRef),
+    getDocs(collection(db, 'rooms')),
+  ]);
+
+  const metaOk = metaSnap.data()?.activeDateKey === today;
+  const roomsOk =
+    roomsSnap.size > 0 &&
+    roomsSnap.docs.every((d) => d.data().scheduleDateKey === today);
+
+  if (metaOk && roomsOk) return false;
+
+  await rebuildRoomDisplaysForDate(db, today);
+  await setDoc(
+    metaRef,
+    {
+      activeDateKey: today,
+      updatedAt: new Date().toISOString(),
+    },
+    { merge: true },
+  );
+  return true;
 }
+

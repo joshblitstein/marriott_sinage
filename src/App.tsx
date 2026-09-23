@@ -2,9 +2,11 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { RequireAdminPath } from './components/RequireAdminPath';
 import { RequireAuth } from './components/RequireAuth';
 import { AuthProvider } from './contexts/AuthContext';
+import { AccountsPage } from './pages/admin/AccountsPage';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { FloorPlanPage } from './pages/admin/FloorPlanPage';
+import { HistoryPage } from './pages/admin/HistoryPage';
 import { ImportPage } from './pages/admin/ImportPage';
 import { LoginPage } from './pages/admin/LoginPage';
 import { OrganizationsPage } from './pages/admin/OrganizationsPage';
@@ -27,6 +29,8 @@ export default function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="organizations" element={<OrganizationsPage />} />
             <Route element={<RequireAdminPath />}>
+              <Route path="accounts" element={<AccountsPage />} />
+              <Route path="history" element={<HistoryPage />} />
               <Route path="floor-plan" element={<FloorPlanPage />} />
               <Route path="import" element={<ImportPage />} />
               <Route path="rooms" element={<RoomsPage />} />

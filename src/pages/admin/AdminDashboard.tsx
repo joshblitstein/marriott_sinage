@@ -14,6 +14,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../lib/firebase';
 import { groupRoomsBySection } from '../../lib/roomSections';
 import { isAdmin } from '../../lib/roles';
+import { writeAuditLog } from '../../lib/audit';
 import {
   eventsForRoomDisplay,
   pickCurrentAndNext,
@@ -305,6 +306,7 @@ export function AdminDashboard() {
     const endTime = new Date(endLocal).toISOString();
     const now = new Date().toISOString();
     const id = editing?.id ?? `manual_${roomId}_${Date.now()}`;
+    const isCreate = !editing;
 
     await setDoc(
       doc(db, 'events', id),
@@ -328,6 +330,36 @@ export function AdminDashboard() {
       { merge: true },
     );
     await rebuildRoomDisplaysForDate(db, dateKey);
+    // Keep live tablets on hotel-today even if a past/future day was edited
+    const today = dateKeyInHotelTz();
+    if (dateKey !== today) {
+      await rebuildRoomDisplaysForDate(db, today);
+    }
+
+    if (user) {
+      const roomName =
+        roomById.get(roomId)?.displayName ?? roomId;
+      const range = formatTimeRange(startTime, endTime);
+      const label = [orgName, title].filter(Boolean).join(' · ');
+      await writeAuditLog(db, {
+        actor: user,
+        action: isCreate ? 'event.create' : 'event.update',
+        entityType: 'event',
+        entityId: id,
+        status: 'staged',
+        summary: isCreate
+          ? `Added manual event: ${label}, ${roomName} ${range}`
+          : `Edited ${label}: updated ${roomName}`,
+        detail: {
+          roomId,
+          roomName,
+          orgName,
+          title,
+          dateKey,
+        },
+      });
+    }
+
     setShowForm(false);
     setEditing(null);
     e.currentTarget.reset();
@@ -342,6 +374,32 @@ export function AdminDashboard() {
     }
     await deleteDoc(doc(db, 'events', ev.id));
     await rebuildRoomDisplaysForDate(db, dateKey);
+    const today = dateKeyInHotelTz();
+    if (dateKey !== today) {
+      await rebuildRoomDisplaysForDate(db, today);
+    }
+
+    if (user) {
+      const roomName =
+        roomById.get(ev.roomId)?.displayName ?? ev.roomId;
+      const label = [ev.orgNameRaw, ev.title].filter(Boolean).join(' · ');
+      await writeAuditLog(db, {
+        actor: user,
+        action: 'event.delete',
+        entityType: 'event',
+        entityId: ev.id,
+        status: 'staged',
+        summary: `Removed manual event: ${label}, ${roomName}`,
+        detail: {
+          roomId: ev.roomId,
+          roomName,
+          orgName: ev.orgNameRaw,
+          title: ev.title,
+          dateKey: ev.dateKey,
+        },
+      });
+    }
+
     setEditing(null);
     setShowForm(false);
   }
@@ -398,7 +456,8 @@ export function AdminDashboard() {
         <div>
           <h1>Today’s schedule</h1>
           <p className="hub-schedule__lede">
-            Hotel time {HOTEL_TZ}. CITY bookings sync nightly; manual events are
+            Hotel time {HOTEL_TZ}. Displays auto-refresh to today at midnight;
+            import a CITY file when the booking sheet changes. Manual events are
             flagged where they overlap a booking.
           </p>
         </div>

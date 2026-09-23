@@ -3,13 +3,13 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import { DisplayKioskControls } from '../../components/DisplayKioskControls';
 import { OrgLogo } from '../../components/OrgLogo';
 import { useScreenPresence } from '../../hooks/useScreenPresence';
+import { useEnsureTodaySchedule } from '../../hooks/useEnsureTodaySchedule';
 import { db } from '../../lib/firebase';
 import {
   dateKeyInHotelTz,
   formatClock,
   formatLongDate,
   formatTimeRange,
-  hotelNowOnDate,
 } from '../../lib/time';
 import type { DisplayEventSnapshot } from '../../types';
 
@@ -60,6 +60,7 @@ export function LobbyPage() {
   const [slideIndex, setSlideIndex] = useState(0);
 
   useScreenPresence(['settings', 'lobby'], { id: 'lobby' });
+  useEnsureTodaySchedule(true);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
@@ -75,22 +76,23 @@ export function LobbyPage() {
     return unsub;
   }, []);
 
-  const scheduleDateKey = useMemo(() => {
-    const fromRooms = rooms.find((r) => r.scheduleDateKey)?.scheduleDateKey;
-    return fromRooms ?? dateKeyInHotelTz(now);
-  }, [rooms, now]);
+  const todayKey = dateKeyInHotelTz(now);
 
-  const referenceNow = useMemo(
+  const scheduleRooms = useMemo(
     () =>
-      scheduleDateKey !== dateKeyInHotelTz(now)
-        ? hotelNowOnDate(scheduleDateKey, now)
-        : now,
-    [scheduleDateKey, now],
+      rooms.map((room) =>
+        room.scheduleDateKey === todayKey
+          ? room
+          : { ...room, scheduleEvents: [] as DisplayEventSnapshot[] },
+      ),
+    [rooms, todayKey],
   );
 
+  const referenceNow = now;
+
   const events = useMemo(
-    () => buildLobbyEvents(rooms.filter((r) => r.active !== false)),
-    [rooms],
+    () => buildLobbyEvents(scheduleRooms.filter((r) => r.active !== false)),
+    [scheduleRooms],
   );
 
   const visible = useMemo(() => {

@@ -4,10 +4,12 @@ import { useParams } from 'react-router-dom';
 import { DisplayKioskControls } from '../../components/DisplayKioskControls';
 import { OrgLogo } from '../../components/OrgLogo';
 import { useScreenPresence } from '../../hooks/useScreenPresence';
+import { useEnsureTodaySchedule } from '../../hooks/useEnsureTodaySchedule';
 import { db } from '../../lib/firebase';
 import { levelLabelForRoom } from '../../lib/roomSections';
 import { pickCurrentAndNext } from '../../lib/schedule';
 import {
+  dateKeyInHotelTz,
   formatClock,
   formatLongDate,
   formatTimeRange,
@@ -56,6 +58,7 @@ export function DisplayPage() {
   const [slide, setSlide] = useState<DoorSlide>('classic');
 
   useScreenPresence(slug && exists !== false ? ['rooms', slug] : null);
+  useEnsureTodaySchedule(exists !== false);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
@@ -114,10 +117,12 @@ export function DisplayPage() {
     return () => clearInterval(t);
   }, []);
 
-  const { next, primary, primaryMode } = useMemo(
-    () => pickCurrentAndNext(data?.events ?? [], now, data?.dateKey),
-    [data, now],
-  );
+  const { next, primary, primaryMode } = useMemo(() => {
+    const today = dateKeyInHotelTz(now);
+    const eventsForToday =
+      data?.dateKey === today ? (data.events ?? []) : [];
+    return pickCurrentAndNext(eventsForToday, now, today);
+  }, [data, now]);
 
   if (exists === false && !data) {
     return (
@@ -154,7 +159,8 @@ export function DisplayPage() {
 
   const roomName = data?.displayName || data?.name || slug;
   const roomId = data?.roomId || slug;
-  const events = data?.events ?? [];
+  const today = dateKeyInHotelTz(now);
+  const events = data?.dateKey === today ? (data.events ?? []) : [];
   const props: DoorProps = {
     roomName,
     roomId,
