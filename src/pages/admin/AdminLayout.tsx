@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+import { GlobalSearch } from '../../components/GlobalSearch';
 import { useAuth } from '../../contexts/AuthContext';
 import { writeAuditLog } from '../../lib/audit';
 import { db } from '../../lib/firebase';
@@ -34,10 +35,26 @@ export function AdminLayout() {
   const { user, signOut } = useAuth();
   const [publishing, setPublishing] = useState(false);
   const [staged, setStaged] = useState(1);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchHotkey, setSearchHotkey] = useState('⌘K');
   const admin = isAdmin(user);
   const lead = isLead(user);
 
   useEnsureTodaySchedule(true);
+
+  useEffect(() => {
+    const mac = /Mac|iPhone|iPad/.test(navigator.platform);
+    setSearchHotkey(mac ? '⌘K' : 'Ctrl+K');
+    function onKey(e: KeyboardEvent) {
+      const meta = e.metaKey || e.ctrlKey;
+      if (meta && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const navItems = NAV.filter((item) => {
     if (item.adminOnly && !admin) return false;
@@ -116,6 +133,15 @@ export function AdminLayout() {
           </div>
 
           <div className="hub-chrome__actions">
+            <button
+              type="button"
+              className="hub-btn hub-btn--soft hub-search-trigger"
+              onClick={() => setSearchOpen(true)}
+              title={`Search all tables (${searchHotkey})`}
+            >
+              Search
+              <kbd>{searchHotkey}</kbd>
+            </button>
             {admin && (
               <>
                 {staged > 0 ? (
@@ -164,6 +190,8 @@ export function AdminLayout() {
       <main className="hub-main">
         <Outlet />
       </main>
+
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 }

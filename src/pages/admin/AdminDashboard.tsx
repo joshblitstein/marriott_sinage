@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
   collection,
   deleteDoc,
@@ -122,8 +122,6 @@ export function AdminDashboard() {
   const [editing, setEditing] = useState<SignageEvent | null>(null);
   const [view, setView] = useState<'day' | 'month'>('day');
   const [nowMs, setNowMs] = useState(() => Date.now());
-  const [search, setSearch] = useState('');
-  const searchQuery = useDeferredValue(search.trim().toLowerCase());
 
   const yearMonth = dateKey.slice(0, 7);
 
@@ -210,44 +208,15 @@ export function AdminDashboard() {
     return map;
   }, [rooms]);
 
-  function matchesSearch(
-    haystacks: Array<string | null | undefined>,
-    q: string,
-  ): boolean {
-    if (!q) return true;
-    return haystacks.some((h) => h?.toLowerCase().includes(q));
-  }
-
-  const filteredDayRooms = useMemo(() => {
-    if (!searchQuery) return activeRooms;
-    return activeRooms.filter((room) => {
-      if (
-        matchesSearch(
-          [room.displayName, room.name, room.id, ...(room.bookingAliases ?? [])],
-          searchQuery,
-        )
-      ) {
-        return true;
-      }
-      const snaps = snapshotsForRoom(room, dateKey, events);
-      return snaps.some((s) =>
-        matchesSearch(
-          [s.orgDisplayName, s.orgName, s.title, s.functionType],
-          searchQuery,
-        ),
-      );
-    });
-  }, [activeRooms, searchQuery, dateKey, events]);
-
   const sections = useMemo(
-    () => groupRoomsBySection(filteredDayRooms),
-    [filteredDayRooms],
+    () => groupRoomsBySection(activeRooms),
+    [activeRooms],
   );
 
   const summary = useMemo(() => {
     let eventCount = 0;
     let roomsInUse = 0;
-    for (const room of filteredDayRooms) {
+    for (const room of activeRooms) {
       const snaps = snapshotsForRoom(room, dateKey, events);
       if (snaps.length > 0) {
         roomsInUse += 1;
@@ -257,28 +226,13 @@ export function AdminDashboard() {
     return {
       eventCount,
       roomsInUse,
-      roomTotal: searchQuery ? filteredDayRooms.length : activeRooms.length,
+      roomTotal: activeRooms.length,
     };
-  }, [filteredDayRooms, activeRooms, dateKey, events, searchQuery]);
+  }, [activeRooms, dateKey, events]);
 
   const filteredMonthEvents = useMemo(() => {
-    const visible = monthEvents.filter((e) => e.display !== false);
-    if (!searchQuery) return visible;
-    return visible.filter((ev) => {
-      const room = roomById.get(ev.roomId);
-      return matchesSearch(
-        [
-          ev.orgNameRaw,
-          ev.title,
-          ev.functionType,
-          room?.displayName,
-          room?.name,
-          room?.id,
-        ],
-        searchQuery,
-      );
-    });
-  }, [monthEvents, searchQuery, roomById]);
+    return monthEvents.filter((e) => e.display !== false);
+  }, [monthEvents]);
 
   const monthSummary = useMemo(() => {
     const byDay = new Map<string, SignageEvent[]>();
@@ -540,25 +494,10 @@ export function AdminDashboard() {
           </button>
         </div>
 
-        <label className="hub-search">
-          <span className="visually-hidden">Search</span>
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search rooms, organizations, events…"
-            aria-label="Search rooms, organizations, or events"
-          />
-        </label>
-
         <p className="hub-schedule__summary">
           {view === 'day'
-            ? `${summary.eventCount} events · ${summary.roomsInUse} of ${summary.roomTotal} rooms in use${
-                searchQuery ? ' · filtered' : ''
-              }`
-            : `${monthSummary.eventCount} events · ${monthSummary.daysWithEvents} days booked${
-                searchQuery ? ' · filtered' : ''
-              }`}
+            ? `${summary.eventCount} events · ${summary.roomsInUse} of ${summary.roomTotal} rooms in use`
+            : `${monthSummary.eventCount} events · ${monthSummary.daysWithEvents} days booked`}
         </p>
       </div>
 
@@ -655,11 +594,7 @@ export function AdminDashboard() {
       )}
 
       {view === 'day' && sections.length === 0 && (
-        <p className="hub-search-empty">
-          {searchQuery
-            ? `No rooms, organizations, or events match “${search.trim()}”.`
-            : 'No active rooms.'}
-        </p>
+        <p className="hub-search-empty">No active rooms.</p>
       )}
 
       {view === 'day' &&
