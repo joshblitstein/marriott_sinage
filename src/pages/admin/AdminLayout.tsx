@@ -2,25 +2,35 @@ import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../lib/firebase';
+import { isAdmin } from '../../lib/roles';
 import { rebuildRoomDisplaysForDate } from '../../lib/schedule';
 import { dateKeyInHotelTz } from '../../lib/time';
 
-const NAV: { to: string; label: string; end?: boolean; soon?: boolean }[] = [
+const NAV: {
+  to: string;
+  label: string;
+  end?: boolean;
+  soon?: boolean;
+  adminOnly?: boolean;
+}[] = [
   { to: '/admin', label: 'Schedule', end: true },
-  { to: '/admin/floor-plan', label: 'Floor plan' },
-  { to: '/admin/import', label: 'Import' },
+  { to: '/admin/floor-plan', label: 'Floor plan', adminOnly: true },
+  { to: '/admin/import', label: 'Import', adminOnly: true },
   { to: '/admin/organizations', label: 'Organizations' },
-  { to: '/admin/rooms', label: 'Rooms' },
-  { to: '/admin/status', label: 'Screens' },
-  { to: '/admin/directory', label: 'Directory layout', soon: true },
-  { to: '/admin/history', label: 'History', soon: true },
-  { to: '/display/lobby', label: 'Preview' },
+  { to: '/admin/rooms', label: 'Rooms', adminOnly: true },
+  { to: '/admin/status', label: 'Screens', adminOnly: true },
+  { to: '/admin/directory', label: 'Directory layout', soon: true, adminOnly: true },
+  { to: '/admin/history', label: 'History', soon: true, adminOnly: true },
+  { to: '/display/lobby', label: 'Preview', adminOnly: true },
 ];
 
 export function AdminLayout() {
   const { user, signOut } = useAuth();
   const [publishing, setPublishing] = useState(false);
   const [staged, setStaged] = useState(1);
+  const admin = isAdmin(user);
+
+  const navItems = NAV.filter((item) => admin || !item.adminOnly);
 
   async function publish() {
     setPublishing(true);
@@ -43,7 +53,7 @@ export function AdminLayout() {
               <span className="hub-brand__hub">Display Hub</span>
             </div>
             <nav className="hub-nav" aria-label="Admin">
-              {NAV.map((item) =>
+              {navItems.map((item) =>
                 item.soon ? (
                   <span
                     key={item.label}
@@ -79,36 +89,46 @@ export function AdminLayout() {
           </div>
 
           <div className="hub-chrome__actions">
-            {staged > 0 ? (
-              <span className="hub-staged">
-                {staged} staged change{staged === 1 ? '' : 's'}
-              </span>
-            ) : (
-              <span className="hub-staged hub-staged--clear">All published</span>
+            {admin && (
+              <>
+                {staged > 0 ? (
+                  <span className="hub-staged">
+                    {staged} staged change{staged === 1 ? '' : 's'}
+                  </span>
+                ) : (
+                  <span className="hub-staged hub-staged--clear">
+                    All published
+                  </span>
+                )}
+                <a
+                  className="hub-btn hub-btn--soft"
+                  href="/display/lobby"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Preview
+                </a>
+                <button
+                  type="button"
+                  className="hub-btn hub-btn--primary"
+                  disabled={publishing}
+                  onClick={() => void publish()}
+                >
+                  {publishing ? 'Publishing…' : 'Publish'}
+                </button>
+              </>
             )}
-            <a
-              className="hub-btn hub-btn--soft"
-              href="/display/lobby"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Preview
-            </a>
-            <button
-              type="button"
-              className="hub-btn hub-btn--primary"
-              disabled={publishing}
-              onClick={() => void publish()}
-            >
-              {publishing ? 'Publishing…' : 'Publish'}
-            </button>
             <button
               type="button"
               className="hub-admin-link"
               onClick={() => void signOut()}
-              title={user?.username ? `Signed in as ${user.username}` : 'Admin'}
+              title={
+                user?.username
+                  ? `Signed in as ${user.username} (${user.role})`
+                  : 'Sign out'
+              }
             >
-              Admin
+              {user?.role === 'manager' ? 'Manager' : 'Admin'}
             </button>
           </div>
         </div>

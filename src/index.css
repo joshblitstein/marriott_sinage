@@ -1443,6 +1443,14 @@ textarea {
   gap: 0.65rem;
 }
 
+.sheraton-mark__logo {
+  display: block;
+  height: 2.75rem;
+  width: auto;
+  max-width: 14rem;
+  object-fit: contain;
+}
+
 .sheraton-mark__emblem {
   width: 2.4rem;
   height: 2.4rem;
@@ -1466,6 +1474,62 @@ textarea {
   color: var(--muted);
   text-transform: none;
   font-size: 0.7rem;
+}
+
+/* Empty room display (no events for this slug) */
+.door-empty {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 2.5rem 2rem;
+  background: #f0f0f0;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.door-empty__logo {
+  display: block;
+  width: min(26rem, 72vw);
+  height: auto;
+  max-height: 8.5rem;
+  object-fit: contain;
+  margin-bottom: 2.5rem;
+}
+
+.door-empty__rule {
+  width: min(14rem, 32vw);
+  height: 0;
+  border: 0;
+  border-top: 1px solid #1a1a1a;
+  border-bottom: 1px solid #1a1a1a;
+  padding-bottom: 2px;
+  margin: 0 0 2.35rem;
+}
+
+.door-empty__room {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(3.25rem, 7.5vw, 5.75rem);
+  font-weight: 700;
+  line-height: 1.12;
+  color: #0f6e7a;
+  letter-spacing: -0.01em;
+  max-width: 16ch;
+}
+
+.door-empty__level {
+  margin: 1.4rem 0 0;
+  font-family: var(--font-serif);
+  font-size: clamp(1.15rem, 2.4vw, 1.65rem);
+  font-weight: 400;
+  letter-spacing: 0.38em;
+  text-indent: 0.38em;
+  text-transform: uppercase;
+  color: #4a4a4a;
 }
 
 .org-logo,

@@ -9,12 +9,16 @@ import {
 } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { OrgLogo } from '../../components/OrgLogo';
+import { useAuth } from '../../contexts/AuthContext';
 import { db, storage } from '../../lib/firebase';
+import { isAdmin } from '../../lib/roles';
 import { rebuildRoomDisplaysForDate } from '../../lib/schedule';
 import { dateKeyInHotelTz } from '../../lib/time';
 import type { Organization } from '../../types';
 
 export function OrganizationsPage() {
+  const { user } = useAuth();
+  const admin = isAdmin(user);
   const [orgs, setOrgs] = useState<Organization[]>([]);
   const [q, setQ] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -85,7 +89,11 @@ export function OrganizationsPage() {
   return (
     <section>
       <h1>Organizations</h1>
-      <p>Logos attach to the organization and appear on every room automatically.</p>
+      <p>
+        {admin
+          ? 'Logos attach to the organization and appear on every room automatically.'
+          : 'Upload or replace organization logos. Logos appear on every room display automatically.'}
+      </p>
       {uploadError && <p className="banner error">{uploadError}</p>}
       <div className="admin-toolbar">
         <input
@@ -100,7 +108,7 @@ export function OrganizationsPage() {
         <thead>
           <tr>
             <th>Organization</th>
-            <th>Display name</th>
+            {admin && <th>Display name</th>}
             <th>Logo</th>
           </tr>
         </thead>
@@ -116,20 +124,22 @@ export function OrganizationsPage() {
                   />
                   <div>
                     <strong>{org.name}</strong>
-                    <div className="meta">{org.normalizedName}</div>
+                    <div className="meta">{org.displayName}</div>
                   </div>
                 </div>
               </td>
-              <td>
-                <input
-                  defaultValue={org.displayName}
-                  onBlur={(e) => {
-                    if (e.target.value !== org.displayName) {
-                      void saveDisplayName(org, e.target.value);
-                    }
-                  }}
-                />
-              </td>
+              {admin && (
+                <td>
+                  <input
+                    defaultValue={org.displayName}
+                    onBlur={(e) => {
+                      if (e.target.value !== org.displayName) {
+                        void saveDisplayName(org, e.target.value);
+                      }
+                    }}
+                  />
+                </td>
+              )}
               <td>
                 <input
                   type="file"

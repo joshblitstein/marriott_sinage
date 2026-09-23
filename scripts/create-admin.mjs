@@ -6,6 +6,7 @@
  *
  * Usage:
  *   npm run create-admin -- admin 'your-password'
+ *   npm run create-admin -- manager 'your-password' manager
  *   # or set ADMIN_PASSWORD in .env.local, then:
  *   npm run create-admin
  *   npm run create-admin -- otheruser
@@ -50,10 +51,12 @@ function hashPassword(password) {
 
 const username = process.argv[2] ?? 'admin';
 const password = process.argv[3] ?? process.env.ADMIN_PASSWORD;
+const roleArg = (process.argv[4] ?? 'admin').toLowerCase();
+const role = roleArg === 'manager' ? 'manager' : 'admin';
 
 if (!password) {
   console.error(
-    "Missing password. Pass it as an argument or set ADMIN_PASSWORD in .env.local:\n\n  npm run create-admin -- admin 'your-password'\n",
+    "Missing password. Pass it as an argument or set ADMIN_PASSWORD in .env.local:\n\n  npm run create-admin -- admin 'your-password'\n  npm run create-admin -- manager 'your-password' manager\n",
   );
   process.exit(1);
 }
@@ -80,10 +83,10 @@ const db = getFirestore(app);
 
 const userDoc = {
   username: username.trim().toLowerCase(),
-  email: username.trim().toLowerCase(), // legacy field for older readers
+  email: username.trim().toLowerCase(),
   passwordHash,
-  name: 'Admin',
-  role: 'admin',
+  name: role === 'manager' ? 'Manager' : 'Admin',
+  role,
   active: true,
   createdAt: new Date().toISOString(),
 };

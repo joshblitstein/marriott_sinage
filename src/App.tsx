@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { RequireAdminPath } from './components/RequireAdminPath';
 import { RequireAuth } from './components/RequireAuth';
 import { AuthProvider } from './contexts/AuthContext';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
@@ -24,11 +25,13 @@ export default function App() {
         <Route path="/admin" element={<RequireAuth />}>
           <Route element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
-            <Route path="floor-plan" element={<FloorPlanPage />} />
-            <Route path="import" element={<ImportPage />} />
             <Route path="organizations" element={<OrganizationsPage />} />
-            <Route path="rooms" element={<RoomsPage />} />
-            <Route path="status" element={<StatusPage />} />
+            <Route element={<RequireAdminPath />}>
+              <Route path="floor-plan" element={<FloorPlanPage />} />
+              <Route path="import" element={<ImportPage />} />
+              <Route path="rooms" element={<RoomsPage />} />
+              <Route path="status" element={<StatusPage />} />
+            </Route>
             <Route path="events" element={<Navigate to="/admin" replace />} />
           </Route>
         </Route>

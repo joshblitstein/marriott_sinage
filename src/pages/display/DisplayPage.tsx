@@ -5,6 +5,7 @@ import { DisplayKioskControls } from '../../components/DisplayKioskControls';
 import { OrgLogo } from '../../components/OrgLogo';
 import { useScreenPresence } from '../../hooks/useScreenPresence';
 import { db } from '../../lib/firebase';
+import { levelLabelForRoom } from '../../lib/roomSections';
 import { pickCurrentAndNext } from '../../lib/schedule';
 import {
   formatClock,
@@ -15,6 +16,7 @@ import type { DisplayEventSnapshot, RoomDisplayDoc } from '../../types';
 
 const SLIDE_MS = 12_000;
 const CACHE_PREFIX = 'signage_display_';
+const SHERATON_LOGO = '/brand/sheraton-logo.svg';
 
 type RoomDoc = {
   name?: string;
@@ -29,6 +31,7 @@ type DoorSlide = 'classic' | 'cards';
 
 type DoorProps = {
   roomName: string;
+  roomId: string;
   events: DisplayEventSnapshot[];
   primary: DisplayEventSnapshot | null;
   primaryMode: 'now' | 'next' | 'today' | null;
@@ -52,9 +55,7 @@ export function DisplayPage() {
   const [offline, setOffline] = useState(!navigator.onLine);
   const [slide, setSlide] = useState<DoorSlide>('classic');
 
-  useScreenPresence(
-    slug && exists !== false ? ['rooms', slug] : null,
-  );
+  useScreenPresence(slug && exists !== false ? ['rooms', slug] : null);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
@@ -122,22 +123,7 @@ export function DisplayPage() {
     return (
       <>
         <DisplayKioskControls />
-        <div className="door-sign door-sign--error">
-          <header className="door-sign__brand">
-            <SheratonMark />
-          </header>
-          <main className="door-sign__main">
-            <p className="door-sign__eyebrow">Room not configured</p>
-            <h1 className="door-sign__room">{slug}</h1>
-            <p className="door-sign__muted">
-              This display slug was not found. Check the URL or activate the room
-              in Admin.
-            </p>
-          </main>
-          <footer className="door-sign__footer">
-            <span>{formatClock(now)}</span>
-          </footer>
-        </div>
+        <DoorEmpty roomName={slug} roomId={slug} />
       </>
     );
   }
@@ -167,15 +153,28 @@ export function DisplayPage() {
   }
 
   const roomName = data?.displayName || data?.name || slug;
+  const roomId = data?.roomId || slug;
+  const events = data?.events ?? [];
   const props: DoorProps = {
     roomName,
-    events: data?.events ?? [],
+    roomId,
+    events,
     primary,
     primaryMode,
     next,
     now,
     offline,
   };
+
+  // Default empty-room screen when this slug has no events today
+  if (events.length === 0) {
+    return (
+      <>
+        <DisplayKioskControls />
+        <DoorEmpty roomName={roomName} roomId={roomId} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -207,9 +206,29 @@ export function DisplayPage() {
   );
 }
 
+/** Empty room — centered venue logo + room name + level (PDF template) */
+function DoorEmpty({
+  roomName,
+  roomId,
+}: {
+  roomName: string;
+  roomId: string;
+}) {
+  const level = levelLabelForRoom({ id: roomId });
+  return (
+    <div className="door-empty">
+      <img className="door-empty__logo" src={SHERATON_LOGO} alt="Sheraton" />
+      <div className="door-empty__rule" aria-hidden />
+      <h1 className="door-empty__room">{roomName}</h1>
+      <p className="door-empty__level">{level}</p>
+    </div>
+  );
+}
+
 /** PDF Template — flat ballroom door sign */
 function DoorClassic({
   roomName,
+  roomId,
   events,
   primary,
   primaryMode,
@@ -217,11 +236,12 @@ function DoorClassic({
   now,
   offline,
 }: DoorProps) {
+  const level = levelLabelForRoom({ id: roomId }).replace(/^LEVEL\s+/i, 'Level ');
   return (
     <div className={`door-sign ${offline ? 'door-sign--offline' : ''}`}>
       <header className="door-sign__top">
         <SheratonMark />
-        <span className="door-sign__level">Level 2</span>
+        <span className="door-sign__level">{level}</span>
       </header>
       <div className="door-sign__rule door-sign__rule--double" />
 
@@ -291,6 +311,7 @@ function DoorClassic({
 /** PDF 4B — card-based ballroom door sign */
 function DoorCards({
   roomName,
+  roomId,
   events,
   primary,
   primaryMode,
@@ -298,12 +319,13 @@ function DoorCards({
   now,
   offline,
 }: DoorProps) {
+  const level = levelLabelForRoom({ id: roomId }).replace(/^LEVEL\s+/i, 'Level ');
   return (
     <div className={`door-cards ${offline ? 'door-cards--offline' : ''}`}>
       <header className="door-cards__top">
         <div className="door-cards__brand">
           <SheratonMark />
-          <p className="door-cards__level">Level 2</p>
+          <p className="door-cards__level">{level}</p>
         </div>
         <span className="door-cards__clock">{formatClock(now)}</span>
       </header>
@@ -447,13 +469,12 @@ function ScheduleList({
 function SheratonMark() {
   return (
     <div className="sheraton-mark">
-      <div className="sheraton-mark__emblem" aria-hidden>
-        S
-      </div>
-      <div className="sheraton-mark__text">
-        <strong>SHERATON</strong>
-        <span>Charlotte Hotel</span>
-      </div>
+      <img
+        className="sheraton-mark__logo"
+        src={SHERATON_LOGO}
+        alt=""
+        aria-hidden
+      />
     </div>
   );
 }

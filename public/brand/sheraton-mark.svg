@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120" fill="none" role="img" aria-label="Sheraton Charlotte Hotel">
+  <circle cx="48" cy="60" r="38" stroke="#111111" stroke-width="3.5"/>
+  <text x="48" y="72" text-anchor="middle" font-family="Georgia, 'Times New Roman', Times, serif" font-size="42" font-weight="700" fill="#111111">S</text>
+  <text x="108" y="52" font-family="Georgia, 'Times New Roman', Times, serif" font-size="34" font-weight="700" letter-spacing="0.28em" fill="#111111">SHERATON</text>
+  <text x="108" y="82" font-family="Georgia, 'Times New Roman', Times, serif" font-size="16" letter-spacing="0.08em" fill="#666666">Charlotte Hotel</text>
+</svg>

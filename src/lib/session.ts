@@ -64,7 +64,7 @@ export async function signInWithUsersTable(
     id,
     username: resolvedUsername,
     name: data.name ? String(data.name) : undefined,
-    role: (data.role as AppUser['role']) ?? 'admin',
+    role: data.role === 'manager' ? 'manager' : 'admin',
   };
 
   saveSession({

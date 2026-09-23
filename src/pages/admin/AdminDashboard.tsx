@@ -10,8 +10,10 @@ import {
   where,
 } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../lib/firebase';
 import { groupRoomsBySection } from '../../lib/roomSections';
+import { isAdmin } from '../../lib/roles';
 import {
   eventsForRoomDisplay,
   pickCurrentAndNext,
@@ -108,6 +110,8 @@ function snapshotsForRoom(
 }
 
 export function AdminDashboard() {
+  const { user } = useAuth();
+  const admin = isAdmin(user);
   const todayKey = dateKeyInHotelTz();
   const [dateKey, setDateKey] = useState(todayKey);
   const [rooms, setRooms] = useState<RoomWithSeen[]>([]);
@@ -399,9 +403,11 @@ export function AdminDashboard() {
           </p>
         </div>
         <div className="hub-schedule__cta">
-          <Link className="hub-link" to="/admin/import">
-            Import CITY file
-          </Link>
+          {admin && (
+            <Link className="hub-link" to="/admin/import">
+              Import CITY file
+            </Link>
+          )}
           <button
             type="button"
             className="hub-btn hub-btn--primary"

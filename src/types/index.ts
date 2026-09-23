@@ -4,7 +4,7 @@ export type AppUser = {
   id: string;
   username: string;
   name?: string;
-  role: 'admin';
+  role: 'admin' | 'manager';
 };
 
 export type UserSession = {
@@ -18,7 +18,7 @@ export type UserDocument = {
   email?: string;
   passwordHash: string;
   name?: string;
-  role: 'admin';
+  role: 'admin' | 'manager';
   active: boolean;
   createdAt: string;
 };
