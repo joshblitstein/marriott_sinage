@@ -349,7 +349,7 @@ function MosaicTile({
   return (
     <article className={large ? 'mosaic-tile mosaic-tile--large' : 'mosaic-tile'}>
       <div className="mosaic-tile__brand">
-        <OrgLogo name={ev.orgDisplayName} logoUrl={ev.logoUrl} size={large ? 64 : 44} />
+        <OrgLogo name={ev.orgDisplayName} logoUrl={ev.logoUrl} />
         <div>
           <div className="mosaic-tile__org">{ev.orgDisplayName}</div>
           {ev.functionType && (

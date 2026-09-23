@@ -1751,12 +1751,7 @@ textarea {
   min-width: 0;
 }
 
-.door-sign__org-row .org-logo,
-.door-sign__org-row .org-monogram {
-  --org-logo-size: clamp(4.25rem, 11vw, 6.85rem);
-}
-
-.door-sign__org-row > div {
+.door-sign__org-row > div:not(.org-monogram) {
   min-width: 0;
   flex: 1;
 }
@@ -1957,13 +1952,8 @@ textarea {
 
 .door-cards__logo {
   margin-top: clamp(0.85rem, 2vh, 1.35rem);
-  width: min(100%, 12rem);
+  width: fit-content;
   max-width: 100%;
-}
-
-.door-cards__logo .org-logo,
-.door-cards__logo .org-monogram {
-  --org-logo-size: clamp(3.75rem, 9vw, 6rem);
 }
 
 .door-cards__next {
@@ -1997,14 +1987,17 @@ textarea {
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  flex-shrink: 0;
 }
 
 .sheraton-mark__logo {
   display: block;
-  height: clamp(2.25rem, 5vw, 3.35rem);
+  height: clamp(2.75rem, 5.5vh, 4rem);
   width: auto;
-  max-width: min(17rem, 42vw);
+  max-width: min(22rem, 50vw);
+  aspect-ratio: 420 / 120;
   object-fit: contain;
+  object-position: left center;
 }
 
 .sheraton-mark__emblem {
@@ -2090,17 +2083,20 @@ textarea {
 
 .org-logo,
 .org-monogram {
-  --org-logo-size: 10rem;
+  --org-logo-size: 6.5rem;
+  box-sizing: border-box;
+  flex: 0 0 var(--org-logo-size);
   width: var(--org-logo-size);
   height: var(--org-logo-size);
-  max-width: 100%;
-  max-height: 100%;
-  aspect-ratio: 1;
-  border-radius: clamp(8px, 1.2vw, 12px);
+  min-width: var(--org-logo-size);
+  min-height: var(--org-logo-size);
+  max-width: var(--org-logo-size);
+  max-height: var(--org-logo-size);
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
   object-fit: contain;
-  flex-shrink: 0;
+  object-position: center;
   background: #fafafa;
-  box-sizing: border-box;
 }
 
 .org-monogram {
@@ -2110,16 +2106,28 @@ textarea {
   font-weight: 700;
   letter-spacing: 0.04em;
   font-size: calc(var(--org-logo-size) * 0.36);
+  line-height: 1;
+  overflow: hidden;
+}
+
+.door-sign__org-row .org-logo,
+.door-sign__org-row .org-monogram {
+  --org-logo-size: clamp(5rem, 9vw, 7rem);
+}
+
+.door-cards__logo .org-logo,
+.door-cards__logo .org-monogram {
+  --org-logo-size: clamp(4.5rem, 8vw, 6rem);
 }
 
 .mosaic-tile__brand .org-logo,
 .mosaic-tile__brand .org-monogram {
-  --org-logo-size: clamp(2.5rem, 5vw, 4rem);
+  --org-logo-size: clamp(2.75rem, 4.5vw, 3.5rem);
 }
 
 .mosaic-tile--large .mosaic-tile__brand .org-logo,
 .mosaic-tile--large .mosaic-tile__brand .org-monogram {
-  --org-logo-size: clamp(3rem, 6vw, 4.5rem);
+  --org-logo-size: clamp(3.25rem, 5.5vw, 4.25rem);
 }
 
 @media (max-width: 900px) {
@@ -2134,12 +2142,12 @@ textarea {
 
   .door-sign__org-row .org-logo,
   .door-sign__org-row .org-monogram {
-    --org-logo-size: clamp(3.75rem, 22vw, 5.5rem);
+    --org-logo-size: clamp(4.5rem, 18vw, 6rem);
   }
 
   .door-cards__logo .org-logo,
   .door-cards__logo .org-monogram {
-    --org-logo-size: clamp(3.5rem, 20vw, 5.25rem);
+    --org-logo-size: clamp(4rem, 16vw, 5.5rem);
   }
 }
 

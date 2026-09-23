@@ -1,17 +1,22 @@
+import type { CSSProperties } from 'react';
 import { colorFromString, monogramInitials } from '../lib/normalize';
 
 type Props = {
   name: string;
   logoUrl?: string | null;
-  /** Base size in px — CSS can override via --org-logo-size on a parent */
+  /**
+   * Optional fixed size in px (admin tables).
+   * Omit on displays so CSS --org-logo-size / clamp() can control sizing.
+   */
   size?: number;
   className?: string;
 };
 
-export function OrgLogo({ name, logoUrl, size = 160, className }: Props) {
-  const style = {
-    ['--org-logo-size' as string]: `${size}px`,
-  };
+export function OrgLogo({ name, logoUrl, size, className }: Props) {
+  const style: CSSProperties | undefined =
+    size != null
+      ? ({ ['--org-logo-size' as string]: `${size}px` } as CSSProperties)
+      : undefined;
 
   if (logoUrl) {
     return (
@@ -20,6 +25,9 @@ export function OrgLogo({ name, logoUrl, size = 160, className }: Props) {
         src={logoUrl}
         alt={name}
         style={style}
+        width={size ?? 160}
+        height={size ?? 160}
+        decoding="async"
       />
     );
   }

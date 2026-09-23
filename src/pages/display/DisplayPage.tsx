@@ -262,7 +262,6 @@ function DoorClassic({
                 <OrgLogo
                   name={primary.orgDisplayName}
                   logoUrl={primary.logoUrl}
-                  size={110}
                 />
                 <div>
                   <h2 className="door-sign__org">{primary.orgDisplayName}</h2>
@@ -363,7 +362,6 @@ function DoorCards({
                     <OrgLogo
                       name={primary.orgDisplayName}
                       logoUrl={primary.logoUrl}
-                      size={96}
                     />
                   </div>
                 </div>
