@@ -70,7 +70,13 @@ function PreviewFrame({
           opacity: scale ? 1 : 0,
         }}
       >
-        <iframe title={title} src={src} className="preview-frame__iframe" />
+        <iframe
+          title={title}
+          src={src}
+          className="preview-frame__iframe"
+          width={width}
+          height={height}
+        />
       </div>
     </div>
   );
@@ -186,14 +192,21 @@ export function PreviewPage() {
         <section className="preview-panel">
           <div className="preview-panel__bar">
             <h2>Lobby directory · Portrait</h2>
-            <Link
-              className="preview-panel__path"
-              to="/display/lobby"
-              target="_blank"
-              rel="noreferrer"
-            >
-              /display/lobby
-            </Link>
+            <div className="preview-panel__room">
+              <Link
+                className="preview-panel__path"
+                to="/display/lobby"
+                target="_blank"
+                rel="noreferrer"
+              >
+                /display/lobby
+              </Link>
+              {admin && (
+                <Link className="preview-panel__edit" to="/admin/directory">
+                  Edit lobby content
+                </Link>
+              )}
+            </div>
           </div>
           <PreviewFrame
             className="preview-frame--portrait"
@@ -202,6 +215,10 @@ export function PreviewPage() {
             width={PORTRAIT.w}
             height={PORTRAIT.h}
           />
+          <p className="preview-panel__note">
+            Charlotte weather updates automatically. Add dining, spa, and other
+            hotel happenings under Directory layout.
+          </p>
         </section>
 
         <section className="preview-panel">

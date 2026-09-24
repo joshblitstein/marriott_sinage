@@ -46,9 +46,19 @@ export type AuditAction =
   | 'account.activate'
   | 'account.deactivate'
   | 'account.2fa_enable'
-  | 'account.2fa_disable';
+  | 'account.2fa_disable'
+  | 'lobby.happening_create'
+  | 'lobby.happening_update'
+  | 'lobby.happening_delete'
+  | 'lobby.directory_update';
 
-export type AuditEntityType = 'event' | 'organization' | 'account' | 'publish' | 'system';
+export type AuditEntityType =
+  | 'event'
+  | 'organization'
+  | 'account'
+  | 'publish'
+  | 'system'
+  | 'lobby';
 
 export type AuditStatus = 'staged' | 'live' | 'alert';
 
@@ -144,6 +154,27 @@ export type AppSettings = {
   id: 'app';
   nonDisplayFunctionTypes: string[];
   hotelTimeZone: string;
+};
+
+/** Extra items shown on the vertical lobby directory (dining, hotel events, etc.) */
+export type LobbyHappening = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  detail?: string;
+  /** Optional grouping label, e.g. Dining, Hotel, Around town */
+  section?: string;
+  sortOrder: number;
+  active: boolean;
+  updatedAt: string;
+};
+
+/** Lobby directory chrome (welcome line, footers) */
+export type LobbyDirectorySettings = {
+  welcomeTitle?: string;
+  footerLeft?: string;
+  footerRight?: string;
+  updatedAt?: string;
 };
 
 export type ImportSummary = {

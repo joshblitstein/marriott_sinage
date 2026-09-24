@@ -14,6 +14,7 @@ import { PreviewPage } from './pages/admin/PreviewPage';
 import { RoomsPage } from './pages/admin/RoomsPage';
 import { SecurityPage } from './pages/admin/SecurityPage';
 import { StatusPage } from './pages/admin/StatusPage';
+import { DirectoryPage } from './pages/admin/DirectoryPage';
 import { DisplayPage } from './pages/display/DisplayPage';
 import { LobbyPage } from './pages/display/LobbyPage';
 
@@ -39,6 +40,7 @@ export default function App() {
               <Route path="import" element={<ImportPage />} />
               <Route path="rooms" element={<RoomsPage />} />
               <Route path="status" element={<StatusPage />} />
+              <Route path="directory" element={<DirectoryPage />} />
             </Route>
             <Route path="events" element={<Navigate to="/admin" replace />} />
           </Route>

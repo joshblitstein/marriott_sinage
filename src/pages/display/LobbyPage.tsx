@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, doc, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { useSearchParams } from 'react-router-dom';
 import { DisplayKioskControls } from '../../components/DisplayKioskControls';
 import { OrgLogo } from '../../components/OrgLogo';
+import { useCharlotteWeather } from '../../hooks/useCharlotteWeather';
 import { useScreenPresence } from '../../hooks/useScreenPresence';
 import { useEnsureTodaySchedule } from '../../hooks/useEnsureTodaySchedule';
 import { db } from '../../lib/firebase';
@@ -12,7 +13,12 @@ import {
   formatLongDate,
   formatTimeRange,
 } from '../../lib/time';
-import type { DisplayEventSnapshot } from '../../types';
+import { formatWeatherLine } from '../../lib/weather';
+import type {
+  DisplayEventSnapshot,
+  LobbyDirectorySettings,
+  LobbyHappening,
+} from '../../types';
 
 type RoomRow = {
   id: string;
@@ -51,16 +57,23 @@ const BALLROOM_GROUPS: { prefix: string; label: string }[] = [
 
 type SlideProps = {
   events: LobbyEvent[];
+  happenings: LobbyHappening[];
+  directory: LobbyDirectorySettings;
   now: Date;
   referenceNow: Date;
+  weatherLine: string | null;
 };
 
 export function LobbyPage() {
   const [searchParams] = useSearchParams();
   const embed = searchParams.get('embed') === '1';
   const [rooms, setRooms] = useState<RoomRow[]>([]);
+  const [happenings, setHappenings] = useState<LobbyHappening[]>([]);
+  const [directory, setDirectory] = useState<LobbyDirectorySettings>({});
   const [now, setNow] = useState(() => new Date());
   const [slideIndex, setSlideIndex] = useState(0);
+  const weather = useCharlotteWeather(true);
+  const weatherLine = formatWeatherLine(weather);
 
   useScreenPresence(embed ? null : ['settings', 'lobby'], { id: 'lobby' });
   useEnsureTodaySchedule(true);
@@ -81,6 +94,29 @@ export function LobbyPage() {
       const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as RoomRow);
       list.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
       setRooms(list);
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    const unsub = onSnapshot(
+      query(collection(db, 'lobbyHappenings'), orderBy('sortOrder')),
+      (snap) => {
+        setHappenings(
+          snap.docs
+            .map((d) => ({ id: d.id, ...d.data() }) as LobbyHappening)
+            .filter((h) => h.active !== false),
+        );
+      },
+    );
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'lobbyDirectory'), (snap) => {
+      setDirectory(
+        snap.exists() ? (snap.data() as LobbyDirectorySettings) : {},
+      );
     });
     return unsub;
   }, []);
@@ -115,10 +151,10 @@ export function LobbyPage() {
     () =>
       embed
         ? ['directory']
-        : visible.length === 0
+        : visible.length === 0 && happenings.length === 0
           ? ['amenities', 'floorplan']
           : ['directory', 'welcome', 'kiosk', 'mosaic', 'floorplan'],
-    [visible.length, embed],
+    [visible.length, happenings.length, embed],
   );
 
   useEffect(() => {
@@ -134,19 +170,28 @@ export function LobbyPage() {
   }, [slides]);
 
   const active = slides[slideIndex] ?? slides[0];
-  const slideProps: SlideProps = { events: visible, now, referenceNow };
+  const slideProps: SlideProps = {
+    events: visible,
+    happenings,
+    directory,
+    now,
+    referenceNow,
+    weatherLine,
+  };
 
   return (
     <>
       {!embed && <DisplayKioskControls />}
-      <div className="lobby-stage">
+      <div className={embed ? 'lobby-stage lobby-stage--embed' : 'lobby-stage'}>
         <div key={active} className="lobby-stage__slide">
           {active === 'directory' && <LobbyDirectory {...slideProps} />}
           {active === 'welcome' && <LobbyWelcome {...slideProps} />}
           {active === 'kiosk' && <LobbyKiosk {...slideProps} />}
           {active === 'mosaic' && <LobbyMosaic {...slideProps} />}
           {active === 'floorplan' && <LobbyFloorPlan now={now} />}
-          {active === 'amenities' && <LobbyAmenities now={now} />}
+          {active === 'amenities' && (
+            <LobbyAmenities now={now} weatherLine={weatherLine} />
+          )}
         </div>
         {slides.length > 1 && (
           <div className="lobby-stage__dots" aria-hidden>
@@ -167,54 +212,109 @@ export function LobbyPage() {
   );
 }
 
-/** TEMPLATE 01 — Today's Events list */
-function LobbyDirectory({ events, now, referenceNow }: SlideProps) {
+/** Vertical lobby directory — meetings + hotel happenings + Charlotte weather */
+function LobbyDirectory({
+  events,
+  happenings,
+  directory,
+  now,
+  referenceNow,
+  weatherLine,
+}: SlideProps) {
+  const welcome =
+    directory.welcomeTitle?.trim() || 'Welcome to Sheraton Charlotte';
+  const footerLeft =
+    directory.footerLeft?.trim() || 'Meeting space on Levels 1 and 2';
+  const footerRight =
+    directory.footerRight?.trim() || 'Guest services · Lobby level';
+
   return (
     <div className="lobby-dir">
       <header className="lobby-dir__header">
         <SheratonBrand />
-        <span className="lobby-dir__clock">{formatClock(now)}</span>
+        <div className="lobby-dir__aside">
+          <span className="lobby-dir__clock">{formatClock(now)}</span>
+          <span className="lobby-dir__date">{formatLongDate(now)}</span>
+          {weatherLine && (
+            <span className="lobby-dir__weather">{weatherLine}</span>
+          )}
+        </div>
       </header>
+
       <div className="lobby-dir__title-block">
-        <h1>Today&apos;s Events</h1>
+        <h1>{welcome}</h1>
         <div className="lobby-dir__rule" />
         <div className="lobby-dir__meta">
-          <span>{formatLongDate(now)}</span>
+          <span className="lobby-dir__today">Today</span>
           <span>LEVEL 2 · GRAND FOYER</span>
         </div>
       </div>
+
       <ul className="lobby-dir__list">
         {events.map((ev) => {
           const status = lobbyStatus(ev, referenceNow);
           return (
             <li key={ev.key} className="lobby-dir__row">
-              <div>
-                <h2 className="lobby-dir__event-title">{ev.orgDisplayName}</h2>
-                <p className="lobby-dir__event-detail">
-                  <strong>{ev.roomLabel}</strong>{' '}
-                  {formatTimeRange(ev.startTime, ev.endTime)}
-                  {ev.functionType ? ` · ${ev.functionType}` : ''}
-                </p>
+              <div className="lobby-dir__row-main">
+                <OrgLogo name={ev.orgDisplayName} logoUrl={ev.logoUrl} />
+                <div className="lobby-dir__copy">
+                  <h2 className="lobby-dir__event-title">{ev.orgDisplayName}</h2>
+                  {(ev.title || ev.functionType) && (
+                    <p className="lobby-dir__event-sub">
+                      {[ev.title, ev.functionType].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
+                  <p className="lobby-dir__event-detail">
+                    <strong>{ev.roomLabel}</strong>{' '}
+                    {formatTimeRange(ev.startTime, ev.endTime)}
+                  </p>
+                </div>
               </div>
               <StatusBadge status={status} />
             </li>
           );
         })}
+
+        {happenings.map((item) => (
+          <li key={item.id} className="lobby-dir__row lobby-dir__row--hotel">
+            <div className="lobby-dir__row-main">
+              <div className="lobby-dir__hotel-mark" aria-hidden>
+                {(item.section || 'H').slice(0, 1).toUpperCase()}
+              </div>
+              <div className="lobby-dir__copy">
+                <h2 className="lobby-dir__event-title">{item.title}</h2>
+                {item.subtitle && (
+                  <p className="lobby-dir__event-sub">{item.subtitle}</p>
+                )}
+                <p className="lobby-dir__event-detail">
+                  {[item.section, item.detail].filter(Boolean).join(' · ')}
+                </p>
+              </div>
+            </div>
+          </li>
+        ))}
+
+        {events.length === 0 && happenings.length === 0 && (
+          <li className="lobby-dir__empty">
+            No meetings or hotel happenings listed right now.
+          </li>
+        )}
       </ul>
+
       <footer className="lobby-dir__footer">
-        <span>Meeting space on Levels 1 and 2</span>
-        <span>Guest services · Lobby level</span>
+        <span>{footerLeft}</span>
+        <span>{footerRight}</span>
       </footer>
     </div>
   );
 }
 
 /** TEMPLATE 02 — Single featured welcome */
-function LobbyWelcome({ events, now, referenceNow }: SlideProps) {
+function LobbyWelcome({ events, now, referenceNow, weatherLine }: SlideProps) {
   const featured =
     events.find((e) => lobbyStatus(e, referenceNow) === 'IN SESSION') ??
     events[0];
-  if (!featured) return <LobbyAmenities now={now} />;
+  if (!featured) return <LobbyAmenities now={now} weatherLine={weatherLine} />;
 
   return (
     <div className="lobby-welcome">
@@ -412,7 +512,13 @@ function LobbyFloorPlan({ now }: { now: Date }) {
 }
 
 /** Nothing booked — hotel amenities */
-function LobbyAmenities({ now }: { now: Date }) {
+function LobbyAmenities({
+  now,
+  weatherLine,
+}: {
+  now: Date;
+  weatherLine?: string | null;
+}) {
   return (
     <div className="lobby-amenities">
       <header className="lobby-amenities__header">
@@ -420,7 +526,10 @@ function LobbyAmenities({ now }: { now: Date }) {
       </header>
       <h1>Welcome</h1>
       <p className="lobby-amenities__date">
-        {formatLongDate(now)} · No events scheduled today
+        {formatLongDate(now)}
+        {weatherLine ? ` · ${weatherLine}` : ''}
+        {' · '}
+        No meetings scheduled today
       </p>
       <div className="lobby-amenities__rule" />
       <div className="lobby-amenities__sections">

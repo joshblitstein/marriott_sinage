@@ -30,7 +30,7 @@ const NAV: {
   { to: '/admin/status', label: 'Screens', adminOnly: true },
   { to: '/admin/accounts', label: 'Accounts', leadOnly: true },
   { to: '/admin/security', label: 'Security' },
-  { to: '/admin/directory', label: 'Directory layout', soon: true, adminOnly: true },
+  { to: '/admin/directory', label: 'Directory layout', adminOnly: true },
   { to: '/admin/history', label: 'History', leadOnly: true },
   { to: '/admin/preview', label: 'Preview' },
 ];
