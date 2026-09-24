@@ -4,6 +4,11 @@ import { GlobalSearch } from '../../components/GlobalSearch';
 import { useAuth } from '../../contexts/AuthContext';
 import { writeAuditLog } from '../../lib/audit';
 import { db } from '../../lib/firebase';
+import {
+  clearStagedCount,
+  readStagedCount,
+  subscribeStagedCount,
+} from '../../lib/publishState';
 import { isAdmin, isLead, roleLabel } from '../../lib/roles';
 import { rebuildRoomDisplaysForDate } from '../../lib/schedule';
 import { dateKeyInHotelTz } from '../../lib/time';
@@ -14,9 +19,7 @@ const NAV: {
   label: string;
   end?: boolean;
   soon?: boolean;
-  /** Admin-only tools */
   adminOnly?: boolean;
-  /** Admin + manager (accounts / activity log) */
   leadOnly?: boolean;
 }[] = [
   { to: '/admin', label: 'Schedule', end: true },
@@ -26,21 +29,24 @@ const NAV: {
   { to: '/admin/rooms', label: 'Rooms', adminOnly: true },
   { to: '/admin/status', label: 'Screens', adminOnly: true },
   { to: '/admin/accounts', label: 'Accounts', leadOnly: true },
+  { to: '/admin/security', label: 'Security' },
   { to: '/admin/directory', label: 'Directory layout', soon: true, adminOnly: true },
   { to: '/admin/history', label: 'History', leadOnly: true },
-  { to: '/display/lobby', label: 'Preview', adminOnly: true },
+  { to: '/admin/preview', label: 'Preview' },
 ];
 
 export function AdminLayout() {
   const { user, signOut } = useAuth();
   const [publishing, setPublishing] = useState(false);
-  const [staged, setStaged] = useState(1);
+  const [staged, setStaged] = useState(() => readStagedCount());
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchHotkey, setSearchHotkey] = useState('⌘K');
   const admin = isAdmin(user);
   const lead = isLead(user);
 
   useEnsureTodaySchedule(true);
+
+  useEffect(() => subscribeStagedCount(() => setStaged(readStagedCount())), []);
 
   useEffect(() => {
     const mac = /Mac|iPhone|iPad/.test(navigator.platform);
@@ -67,6 +73,7 @@ export function AdminLayout() {
     try {
       const count = staged;
       await rebuildRoomDisplaysForDate(db, dateKeyInHotelTz());
+      clearStagedCount();
       setStaged(0);
       if (user) {
         await writeAuditLog(db, {
@@ -106,16 +113,6 @@ export function AdminLayout() {
                   >
                     {item.label}
                   </span>
-                ) : item.to.startsWith('/display') ? (
-                  <a
-                    key={item.label}
-                    className="hub-nav__link"
-                    href={item.to}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {item.label}
-                  </a>
                 ) : (
                   <NavLink
                     key={item.to}
@@ -153,14 +150,14 @@ export function AdminLayout() {
                     All published
                   </span>
                 )}
-                <a
-                  className="hub-btn hub-btn--soft"
-                  href="/display/lobby"
-                  target="_blank"
-                  rel="noreferrer"
+                <NavLink
+                  to="/admin/preview"
+                  className={({ isActive }) =>
+                    isActive ? 'hub-btn hub-btn--soft is-active' : 'hub-btn hub-btn--soft'
+                  }
                 >
                   Preview
-                </a>
+                </NavLink>
                 <button
                   type="button"
                   className="hub-btn hub-btn--primary"
@@ -170,6 +167,11 @@ export function AdminLayout() {
                   {publishing ? 'Publishing…' : 'Publish'}
                 </button>
               </>
+            )}
+            {!admin && (
+              <NavLink to="/admin/preview" className="hub-btn hub-btn--soft">
+                Preview
+              </NavLink>
             )}
             <button
               type="button"

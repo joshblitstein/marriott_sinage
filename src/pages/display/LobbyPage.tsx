@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
+import { useSearchParams } from 'react-router-dom';
 import { DisplayKioskControls } from '../../components/DisplayKioskControls';
 import { OrgLogo } from '../../components/OrgLogo';
 import { useScreenPresence } from '../../hooks/useScreenPresence';
@@ -55,12 +56,20 @@ type SlideProps = {
 };
 
 export function LobbyPage() {
+  const [searchParams] = useSearchParams();
+  const embed = searchParams.get('embed') === '1';
   const [rooms, setRooms] = useState<RoomRow[]>([]);
   const [now, setNow] = useState(() => new Date());
   const [slideIndex, setSlideIndex] = useState(0);
 
-  useScreenPresence(['settings', 'lobby'], { id: 'lobby' });
+  useScreenPresence(embed ? null : ['settings', 'lobby'], { id: 'lobby' });
   useEnsureTodaySchedule(true);
+
+  useEffect(() => {
+    if (!embed) return;
+    document.documentElement.classList.add('display-embed');
+    return () => document.documentElement.classList.remove('display-embed');
+  }, [embed]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
@@ -104,10 +113,12 @@ export function LobbyPage() {
 
   const slides: SlideId[] = useMemo(
     () =>
-      visible.length === 0
-        ? ['amenities', 'floorplan']
-        : ['directory', 'welcome', 'kiosk', 'mosaic', 'floorplan'],
-    [visible.length],
+      embed
+        ? ['directory']
+        : visible.length === 0
+          ? ['amenities', 'floorplan']
+          : ['directory', 'welcome', 'kiosk', 'mosaic', 'floorplan'],
+    [visible.length, embed],
   );
 
   useEffect(() => {
@@ -127,7 +138,7 @@ export function LobbyPage() {
 
   return (
     <>
-      <DisplayKioskControls />
+      {!embed && <DisplayKioskControls />}
       <div className="lobby-stage">
         <div key={active} className="lobby-stage__slide">
           {active === 'directory' && <LobbyDirectory {...slideProps} />}

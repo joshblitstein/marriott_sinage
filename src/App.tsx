@@ -10,7 +10,9 @@ import { HistoryPage } from './pages/admin/HistoryPage';
 import { ImportPage } from './pages/admin/ImportPage';
 import { LoginPage } from './pages/admin/LoginPage';
 import { OrganizationsPage } from './pages/admin/OrganizationsPage';
+import { PreviewPage } from './pages/admin/PreviewPage';
 import { RoomsPage } from './pages/admin/RoomsPage';
+import { SecurityPage } from './pages/admin/SecurityPage';
 import { StatusPage } from './pages/admin/StatusPage';
 import { DisplayPage } from './pages/display/DisplayPage';
 import { LobbyPage } from './pages/display/LobbyPage';
@@ -28,6 +30,8 @@ export default function App() {
           <Route element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="organizations" element={<OrganizationsPage />} />
+            <Route path="security" element={<SecurityPage />} />
+            <Route path="preview" element={<PreviewPage />} />
             <Route element={<RequireAdminPath />}>
               <Route path="accounts" element={<AccountsPage />} />
               <Route path="history" element={<HistoryPage />} />

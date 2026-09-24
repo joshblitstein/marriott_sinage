@@ -2,10 +2,12 @@ import type { AppUser, UserRole } from '../types';
 
 export type { UserRole };
 
-/** Operational routes shared by managers and users */
+/** Operational routes shared by all signed-in staff */
 export const STAFF_PATHS = new Set([
   '/admin',
   '/admin/organizations',
+  '/admin/security',
+  '/admin/preview',
 ]);
 
 /** Account + history routes for admin and manager */
@@ -94,14 +96,19 @@ export function canAccessAdminPath(
       pathname === '/admin' ||
       pathname.startsWith('/admin/organizations') ||
       pathname.startsWith('/admin/accounts') ||
-      pathname.startsWith('/admin/history')
+      pathname.startsWith('/admin/history') ||
+      pathname.startsWith('/admin/security') ||
+      pathname.startsWith('/admin/preview')
     );
   }
 
   if (user.role === 'user') {
     if (STAFF_PATHS.has(pathname)) return true;
     return (
-      pathname === '/admin' || pathname.startsWith('/admin/organizations')
+      pathname === '/admin' ||
+      pathname.startsWith('/admin/organizations') ||
+      pathname.startsWith('/admin/security') ||
+      pathname.startsWith('/admin/preview')
     );
   }
 

@@ -9,7 +9,7 @@ import {
   setDoc,
   where,
 } from 'firebase/firestore';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../lib/firebase';
 import { groupRoomsBySection } from '../../lib/roomSections';
@@ -113,8 +113,14 @@ function snapshotsForRoom(
 export function AdminDashboard() {
   const { user } = useAuth();
   const admin = isAdmin(user);
+  const [searchParams, setSearchParams] = useSearchParams();
   const todayKey = dateKeyInHotelTz();
-  const [dateKey, setDateKey] = useState(todayKey);
+  const initialDate = searchParams.get('date');
+  const [dateKey, setDateKey] = useState(
+    initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate)
+      ? initialDate
+      : todayKey,
+  );
   const [rooms, setRooms] = useState<RoomWithSeen[]>([]);
   const [events, setEvents] = useState<SignageEvent[]>([]);
   const [monthEvents, setMonthEvents] = useState<SignageEvent[]>([]);
@@ -129,6 +135,32 @@ export function AdminDashboard() {
     const t = setInterval(() => setNowMs(Date.now()), 5_000);
     return () => clearInterval(t);
   }, []);
+
+  // Deep-link from global search: /admin?date=YYYY-MM-DD&event=id
+  useEffect(() => {
+    const date = searchParams.get('date');
+    if (date && /^\d{4}-\d{2}-\d{2}$/.test(date) && date !== dateKey) {
+      setDateKey(date);
+      setView('day');
+    }
+  }, [searchParams, dateKey]);
+
+  useEffect(() => {
+    const eventId = searchParams.get('event');
+    if (!eventId || view !== 'day') return;
+    const found = events.find((e) => e.id === eventId);
+    if (!found) return;
+    setEditing(found);
+    setShowForm(true);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('event');
+        return next;
+      },
+      { replace: true },
+    );
+  }, [events, searchParams, setSearchParams, view]);
 
   useEffect(() => {
     const unsub = onSnapshot(

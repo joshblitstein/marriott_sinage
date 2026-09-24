@@ -1,4 +1,5 @@
 import { doc, setDoc, type Firestore } from 'firebase/firestore';
+import { bumpStagedCount } from './publishState';
 import type {
   AppUser,
   AuditAction,
@@ -38,6 +39,7 @@ export async function writeAuditLog(
 ): Promise<void> {
   const at = new Date().toISOString();
   const id = `log_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const status = input.status ?? defaultStatus(input.action);
   const entry: AuditLogEntry = {
     id,
     at,
@@ -49,12 +51,13 @@ export async function writeAuditLog(
     entityType: input.entityType,
     entityId: input.entityId,
     summary: input.summary,
-    status: input.status ?? defaultStatus(input.action),
+    status,
     ...(input.detail ? { detail: input.detail } : {}),
   };
 
   try {
     await setDoc(doc(db, 'auditLogs', id), entry);
+    if (status === 'staged') bumpStagedCount();
   } catch (err) {
     console.warn('audit log write failed', err);
   }

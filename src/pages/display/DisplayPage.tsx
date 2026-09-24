@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { DisplayKioskControls } from '../../components/DisplayKioskControls';
 import { OrgLogo } from '../../components/OrgLogo';
 import { useScreenPresence } from '../../hooks/useScreenPresence';
@@ -44,6 +44,8 @@ type DoorProps = {
 
 export function DisplayPage() {
   const { slug = '' } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
+  const embed = searchParams.get('embed') === '1';
   const [data, setData] = useState<RoomDisplayDoc | null>(() => {
     try {
       const raw = localStorage.getItem(CACHE_PREFIX + slug);
@@ -57,8 +59,16 @@ export function DisplayPage() {
   const [offline, setOffline] = useState(!navigator.onLine);
   const [slide, setSlide] = useState<DoorSlide>('classic');
 
-  useScreenPresence(slug && exists !== false ? ['rooms', slug] : null);
+  useScreenPresence(
+    !embed && slug && exists !== false ? ['rooms', slug] : null,
+  );
   useEnsureTodaySchedule(exists !== false);
+
+  useEffect(() => {
+    if (!embed) return;
+    document.documentElement.classList.add('display-embed');
+    return () => document.documentElement.classList.remove('display-embed');
+  }, [embed]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
@@ -111,11 +121,12 @@ export function DisplayPage() {
   }, [slug]);
 
   useEffect(() => {
+    if (embed) return;
     const t = setInterval(() => {
       setSlide((s) => (s === 'classic' ? 'cards' : 'classic'));
     }, SLIDE_MS);
     return () => clearInterval(t);
-  }, []);
+  }, [embed]);
 
   const { next, primary, primaryMode } = useMemo(() => {
     const today = dateKeyInHotelTz(now);
@@ -127,7 +138,7 @@ export function DisplayPage() {
   if (exists === false && !data) {
     return (
       <>
-        <DisplayKioskControls />
+        {!embed && <DisplayKioskControls />}
         <DoorEmpty roomName={slug} roomId={slug} />
       </>
     );
@@ -136,7 +147,7 @@ export function DisplayPage() {
   if (data && data.active === false) {
     return (
       <>
-        <DisplayKioskControls />
+        {!embed && <DisplayKioskControls />}
         <div className="door-sign door-sign--error">
           <header className="door-sign__brand">
             <SheratonMark />
@@ -176,7 +187,7 @@ export function DisplayPage() {
   if (events.length === 0) {
     return (
       <>
-        <DisplayKioskControls />
+        {!embed && <DisplayKioskControls />}
         <DoorEmpty roomName={roomName} roomId={roomId} />
       </>
     );
@@ -184,7 +195,7 @@ export function DisplayPage() {
 
   return (
     <>
-      <DisplayKioskControls />
+      {!embed && <DisplayKioskControls />}
       <div className="door-stage">
         <div key={slide} className="door-stage__slide">
           {slide === 'classic' ? (
@@ -193,20 +204,22 @@ export function DisplayPage() {
             <DoorCards {...props} />
           )}
         </div>
-        <div className="door-stage__dots" aria-hidden>
-          <span
-            className={
-              slide === 'classic'
-                ? 'door-stage__dot is-active'
-                : 'door-stage__dot'
-            }
-          />
-          <span
-            className={
-              slide === 'cards' ? 'door-stage__dot is-active' : 'door-stage__dot'
-            }
-          />
-        </div>
+        {!embed && (
+          <div className="door-stage__dots" aria-hidden>
+            <span
+              className={
+                slide === 'classic'
+                  ? 'door-stage__dot is-active'
+                  : 'door-stage__dot'
+              }
+            />
+            <span
+              className={
+                slide === 'cards' ? 'door-stage__dot is-active' : 'door-stage__dot'
+              }
+            />
+          </div>
+        )}
       </div>
     </>
   );
@@ -253,7 +266,7 @@ function DoorClassic({
 
       <div className="door-sign__grid">
         <section className="door-sign__now-pane">
-          <h1 className="door-sign__room door-sign__room--teal">{roomName}</h1>
+          <h1 className="door-sign__room">{roomName}</h1>
 
           {primary ? (
             <>

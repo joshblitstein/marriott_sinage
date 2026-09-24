@@ -13,7 +13,7 @@ import {
   orderBy,
   query,
 } from 'firebase/firestore';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { isAdmin, isLead, roleLabel } from '../lib/roles';
@@ -130,6 +130,7 @@ export function GlobalSearch({ open, onClose }: Props) {
   const { user } = useAuth();
   const lead = isLead(user);
   const admin = isAdmin(user);
+  const navigate = useNavigate();
   const titleId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [queryText, setQueryText] = useState('');
@@ -138,6 +139,11 @@ export function GlobalSearch({ open, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const nowMs = Date.now();
+
+  function go(path: string) {
+    onClose();
+    navigate(path);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -329,7 +335,26 @@ export function GlobalSearch({ open, onClose }: Props) {
                 </thead>
                 <tbody>
                   {results.events.map((ev) => (
-                    <tr key={ev.id}>
+                    <tr
+                      key={ev.id}
+                      className="is-clickable"
+                      tabIndex={0}
+                      role="link"
+                      title="Open on schedule"
+                      onClick={() =>
+                        go(
+                          `/admin?date=${encodeURIComponent(ev.dateKey)}&event=${encodeURIComponent(ev.id)}`,
+                        )
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          go(
+                            `/admin?date=${encodeURIComponent(ev.dateKey)}&event=${encodeURIComponent(ev.id)}`,
+                          );
+                        }
+                      }}
+                    >
                       <td>{ev.dateKey || formatEventWhen(ev.startTime)}</td>
                       <td>
                         <strong>{ev.orgNameRaw || '—'}</strong>
@@ -369,7 +394,24 @@ export function GlobalSearch({ open, onClose }: Props) {
                   {results.rooms.map((room) => {
                     const online = isScreenOnline(room, nowMs);
                     return (
-                      <tr key={room.id}>
+                      <tr
+                        key={room.id}
+                        className="is-clickable"
+                        tabIndex={0}
+                        role="link"
+                        title="Open room display"
+                        onClick={() => {
+                          onClose();
+                          window.open(`/display/${room.id}`, '_blank', 'noopener,noreferrer');
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onClose();
+                            window.open(`/display/${room.id}`, '_blank', 'noopener,noreferrer');
+                          }
+                        }}
+                      >
                         <td>
                           <strong>{room.displayName}</strong>
                         </td>
@@ -431,7 +473,26 @@ export function GlobalSearch({ open, onClose }: Props) {
                 </thead>
                 <tbody>
                   {results.organizations.map((org) => (
-                    <tr key={org.id}>
+                    <tr
+                      key={org.id}
+                      className="is-clickable"
+                      tabIndex={0}
+                      role="link"
+                      title="Open organization"
+                      onClick={() =>
+                        go(
+                          `/admin/organizations?q=${encodeURIComponent(org.displayName || org.name)}`,
+                        )
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          go(
+                            `/admin/organizations?q=${encodeURIComponent(org.displayName || org.name)}`,
+                          );
+                        }
+                      }}
+                    >
                       <td>
                         <strong>{org.name}</strong>
                       </td>
@@ -466,7 +527,20 @@ export function GlobalSearch({ open, onClose }: Props) {
                 </thead>
                 <tbody>
                   {results.users.map((row) => (
-                    <tr key={row.id}>
+                    <tr
+                      key={row.id}
+                      className="is-clickable"
+                      tabIndex={0}
+                      role="link"
+                      title="Open accounts"
+                      onClick={() => go('/admin/accounts')}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          go('/admin/accounts');
+                        }
+                      }}
+                    >
                       <td>
                         <strong>{row.username}</strong>
                         {row.name && (
@@ -507,7 +581,20 @@ export function GlobalSearch({ open, onClose }: Props) {
                 </thead>
                 <tbody>
                   {results.auditLogs.map((log) => (
-                    <tr key={log.id}>
+                    <tr
+                      key={log.id}
+                      className="is-clickable"
+                      tabIndex={0}
+                      role="link"
+                      title="Open history"
+                      onClick={() => go('/admin/history')}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          go('/admin/history');
+                        }
+                      }}
+                    >
                       <td className="gs-table__muted">
                         {formatAuditWhen(log.at)}
                       </td>

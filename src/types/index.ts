@@ -24,6 +24,11 @@ export type UserDocument = {
   active: boolean;
   createdAt: string;
   updatedAt?: string;
+  /** Authenticator app (TOTP) two-factor */
+  totpEnabled?: boolean;
+  totpSecret?: string | null;
+  /** SHA-256 hashes of one-time recovery codes */
+  totpRecoveryHashes?: string[];
 };
 
 /** Activity log for account + schedule/org changes */
@@ -39,7 +44,9 @@ export type AuditAction =
   | 'account.role_change'
   | 'account.password_reset'
   | 'account.activate'
-  | 'account.deactivate';
+  | 'account.deactivate'
+  | 'account.2fa_enable'
+  | 'account.2fa_disable';
 
 export type AuditEntityType = 'event' | 'organization' | 'account' | 'publish' | 'system';
 

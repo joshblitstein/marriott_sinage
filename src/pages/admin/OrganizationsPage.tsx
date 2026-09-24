@@ -8,6 +8,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { useSearchParams } from 'react-router-dom';
 import { OrgLogo } from '../../components/OrgLogo';
 import { useAuth } from '../../contexts/AuthContext';
 import { writeAuditLog } from '../../lib/audit';
@@ -20,11 +21,17 @@ import type { Organization } from '../../types';
 export function OrganizationsPage() {
   const { user } = useAuth();
   const admin = isAdmin(user);
+  const [searchParams] = useSearchParams();
   const [orgs, setOrgs] = useState<Organization[]>([]);
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState(() => searchParams.get('q') ?? '');
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fromUrl = searchParams.get('q');
+    if (fromUrl != null) setQ(fromUrl);
+  }, [searchParams]);
 
   useEffect(() => {
     const unsub = onSnapshot(

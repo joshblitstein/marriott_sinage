@@ -1,12 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
   collection,
+  doc,
   onSnapshot,
   orderBy,
   query,
+  setDoc,
   where,
 } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { writeAuditLog } from '../../lib/audit';
 import { db } from '../../lib/firebase';
 import {
   FLOORS,
@@ -18,6 +22,7 @@ import {
 import {
   eventsForRoomDisplay,
   pickCurrentAndNext,
+  rebuildRoomDisplaysForDate,
 } from '../../lib/schedule';
 import { isScreenOnline } from '../../lib/screenPresence';
 import {
@@ -103,6 +108,25 @@ function formatStartClock(iso: string): string {
 function truncate(text: string, max: number): string {
   if (text.length <= max) return text;
   return `${text.slice(0, Math.max(0, max - 1)).trimEnd()}…`;
+}
+
+function toLocalInputValue(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/** Round up to next 15 minutes for sensible booking defaults */
+function defaultBookingWindow(now = new Date()): { start: string; end: string } {
+  const start = new Date(now);
+  start.setSeconds(0, 0);
+  const mins = start.getMinutes();
+  const add = mins % 15 === 0 ? 0 : 15 - (mins % 15);
+  start.setMinutes(mins + add);
+  const end = new Date(start.getTime() + 60 * 60 * 1000);
+  return {
+    start: toLocalInputValue(start),
+    end: toLocalInputValue(end),
+  };
 }
 
 function buildRoomView(
@@ -300,7 +324,7 @@ export function FloorPlanPage() {
 
         <aside className="fp-detail" aria-live="polite">
           {selected ? (
-            <RoomDetail view={selected} />
+            <RoomDetail view={selected} dateKey={todayKey} />
           ) : (
             <p className="fp-detail__empty">
               Select a room on the plan to see its schedule and screen.
@@ -597,14 +621,114 @@ function LobbyFloorPlan({
   );
 }
 
-function RoomDetail({ view }: { view: RoomView }) {
+function RoomDetail({
+  view,
+  dateKey,
+}: {
+  view: RoomView;
+  dateKey: string;
+}) {
+  const { user } = useAuth();
   const { room, snaps, occupancy, online, headline } = view;
+  const availableNow = occupancy !== 'now';
+  const [booking, setBooking] = useState(availableNow);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [ok, setOk] = useState<string | null>(null);
+  const defaults = useMemo(() => defaultBookingWindow(), [room.id]);
+
+  useEffect(() => {
+    setBooking(availableNow);
+    setError(null);
+    setOk(null);
+  }, [room.id, availableNow]);
+
   const occupancyLabel =
     occupancy === 'now'
       ? 'In use now'
       : occupancy === 'later'
         ? 'Booked later today'
         : 'Free';
+
+  async function bookRoom(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!user) {
+      setError('Sign in to book a room.');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    setOk(null);
+    try {
+      const fd = new FormData(e.currentTarget);
+      const orgName = String(fd.get('orgName') ?? '').trim();
+      const title = String(fd.get('title') ?? '').trim();
+      const startLocal = String(fd.get('start') ?? '');
+      const endLocal = String(fd.get('end') ?? '');
+      if (!orgName || !title || !startLocal || !endLocal) {
+        throw new Error('Fill in organization, title, start, and end.');
+      }
+      const startTime = new Date(startLocal).toISOString();
+      const endTime = new Date(endLocal).toISOString();
+      if (Number.isNaN(Date.parse(startTime)) || Number.isNaN(Date.parse(endTime))) {
+        throw new Error('Enter valid start and end times.');
+      }
+      if (new Date(endTime).getTime() <= new Date(startTime).getTime()) {
+        throw new Error('End time must be after start time.');
+      }
+
+      const eventDateKey = dateKeyInHotelTz(new Date(startTime));
+      const id = `manual_${room.id}_${Date.now()}`;
+      const nowIso = new Date().toISOString();
+
+      await setDoc(doc(db, 'events', id), {
+        id,
+        roomId: room.id,
+        orgId: null,
+        orgNameRaw: orgName,
+        title,
+        startTime,
+        endTime,
+        functionType: 'Manual',
+        source: 'manual',
+        display: true,
+        dateKey: eventDateKey,
+        updatedAt: nowIso,
+      } satisfies SignageEvent);
+
+      await rebuildRoomDisplaysForDate(db, eventDateKey);
+      const today = dateKeyInHotelTz();
+      if (eventDateKey !== today) {
+        await rebuildRoomDisplaysForDate(db, today);
+      }
+
+      const range = formatTimeRange(startTime, endTime);
+      await writeAuditLog(db, {
+        actor: user,
+        action: 'event.create',
+        entityType: 'event',
+        entityId: id,
+        status: 'staged',
+        summary: `Added manual event: ${orgName} · ${title}, ${room.displayName} ${range}`,
+        detail: {
+          roomId: room.id,
+          roomName: room.displayName,
+          orgName,
+          title,
+          dateKey: eventDateKey,
+          source: 'floor-plan',
+        },
+      });
+
+      setOk(`Booked ${room.displayName} for ${orgName}.`);
+      e.currentTarget.reset();
+      setBooking(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not book room');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="fp-detail__body">
@@ -644,8 +768,26 @@ function RoomDetail({ view }: { view: RoomView }) {
       )}
 
       <div className="fp-detail__actions">
+        {availableNow && !booking && (
+          <button
+            type="button"
+            className="fp-detail__link"
+            onClick={() => setBooking(true)}
+          >
+            Book room
+          </button>
+        )}
+        {!availableNow && !booking && (
+          <button
+            type="button"
+            className="fp-detail__link fp-detail__link--soft"
+            onClick={() => setBooking(true)}
+          >
+            Book later slot
+          </button>
+        )}
         <Link
-          className="fp-detail__link"
+          className="fp-detail__link fp-detail__link--soft"
           to={`/display/${room.id}`}
           target="_blank"
           rel="noreferrer"
@@ -653,6 +795,67 @@ function RoomDetail({ view }: { view: RoomView }) {
           Open display
         </Link>
       </div>
+
+      {ok && <p className="banner success">{ok}</p>}
+      {error && <p className="fp-detail__error">{error}</p>}
+
+      {booking && (
+        <form className="fp-detail__book" onSubmit={(e) => void bookRoom(e)}>
+          <h3>{availableNow ? 'Book this room' : 'Add a booking'}</h3>
+          <p className="fp-detail__book-lede">
+            {availableNow
+              ? `${room.displayName} is available now. Create a manual event for today (${dateKey}).`
+              : `${room.displayName} is in use. Schedule another time below.`}
+          </p>
+          <label>
+            Organization
+            <input name="orgName" required placeholder="Organization name" />
+          </label>
+          <label>
+            Title / Post As
+            <input name="title" required placeholder="Meeting or event title" />
+          </label>
+          <label>
+            Start
+            <input
+              name="start"
+              type="datetime-local"
+              required
+              defaultValue={defaults.start}
+              key={`${room.id}-start-${defaults.start}`}
+            />
+          </label>
+          <label>
+            End
+            <input
+              name="end"
+              type="datetime-local"
+              required
+              defaultValue={defaults.end}
+              key={`${room.id}-end-${defaults.end}`}
+            />
+          </label>
+          <div className="fp-detail__book-actions">
+            <button
+              type="submit"
+              className="fp-detail__link"
+              disabled={busy}
+            >
+              {busy ? 'Booking…' : 'Save booking'}
+            </button>
+            <button
+              type="button"
+              className="fp-detail__link fp-detail__link--soft"
+              onClick={() => {
+                setBooking(false);
+                setError(null);
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

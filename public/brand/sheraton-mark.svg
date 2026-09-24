@@ -1,6 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120" fill="none" role="img" aria-label="Sheraton Charlotte Hotel">
-  <circle cx="48" cy="60" r="38" stroke="#111111" stroke-width="3.5"/>
-  <text x="48" y="72" text-anchor="middle" font-family="Georgia, 'Times New Roman', Times, serif" font-size="42" font-weight="700" fill="#111111">S</text>
-  <text x="108" y="52" font-family="Georgia, 'Times New Roman', Times, serif" font-size="34" font-weight="700" letter-spacing="0.28em" fill="#111111">SHERATON</text>
-  <text x="108" y="82" font-family="Georgia, 'Times New Roman', Times, serif" font-size="16" letter-spacing="0.08em" fill="#666666">Charlotte Hotel</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 104 104" fill="none" role="img" aria-label="Sheraton">
+  <!-- Emblem — Warm Tungsten. Swap for official Marriott assets when provided. -->
+  <circle cx="52" cy="52" r="44" stroke="#3A3432" stroke-width="3.25" fill="none"/>
+  <text
+    x="52"
+    y="66"
+    text-anchor="middle"
+    fill="#3A3432"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="54"
+    font-weight="700"
+  >S</text>
+  <g stroke="#3A3432" fill="none" stroke-linecap="round">
+    <path stroke-width="2.1" d="M22 30h18M64 30h18M20 40h14M70 40h14M18 50h12M74 50h12M18 60h12M74 60h12M20 70h14M70 70h14M22 80h18M64 80h18"/>
+  </g>
 </svg>

@@ -1,28 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120" fill="none" role="img" aria-label="Sheraton">
-  <!-- Warm Tungsten on Oyster (primary). Swap for official Marriott PNGs/SVGs when provided. -->
-  <g stroke="#3A3432" fill="none" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="52" cy="52" r="36" stroke-width="2.75"/>
-    <!-- Horizontal shutter lines -->
-    <path stroke-width="1.85" d="M28 34h48M26 42h52M25 50h54M25 58h54M26 66h52M28 74h48"/>
-    <!-- S counter-punch via thick oyster gaps is approximated with a bold S over the lines -->
-  </g>
+  <!-- Oyster on dark backgrounds. Swap for official Marriott assets when provided. -->
+  <circle cx="52" cy="52" r="36" stroke="#EDE8E2" stroke-width="2.75" fill="none"/>
   <text
     x="52"
     y="64"
     text-anchor="middle"
-    fill="#3A3432"
+    fill="#EDE8E2"
     font-family="Georgia, 'Times New Roman', serif"
     font-size="44"
     font-weight="700"
   >S</text>
-  <!-- Re-draw shutter lines clipped to ring left/right of S for brand-like look -->
-  <g stroke="#3A3432" fill="none" stroke-linecap="round">
+  <g stroke="#EDE8E2" fill="none" stroke-linecap="round">
     <path stroke-width="1.85" d="M28 34h14M62 34h14M26 42h12M66 42h12M25 50h10M69 50h10M25 58h10M69 58h10M26 66h12M66 66h12M28 74h14M62 74h14"/>
   </g>
   <text
     x="108"
     y="48"
-    fill="#3A3432"
+    fill="#EDE8E2"
     font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
     font-size="32"
     font-weight="500"
@@ -31,7 +25,7 @@
   <text
     x="108"
     y="76"
-    fill="#6E655F"
+    fill="#C9C3BE"
     font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
     font-size="13"
     font-weight="500"
