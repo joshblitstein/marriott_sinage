@@ -138,7 +138,7 @@ export function RoomsPage() {
             <th>Room</th>
             <th>Slug / URL</th>
             <th>Active</th>
-            <th>Card template</th>
+              <th>Event template</th>
             <th>Booking aliases (one per line)</th>
           </tr>
         </thead>

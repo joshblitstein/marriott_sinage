@@ -52,6 +52,19 @@ export function cardsLayoutElements(): TemplateBox[] {
   ];
 }
 
+/** Layout inspired by DoorEmpty — idle / no-event room sign. */
+export function idleLayoutElements(): TemplateBox[] {
+  return [
+    box('brand', 22, 24, 56, 16, { textAlign: 'center' }),
+    box('roomName', 8, 48, 84, 18, {
+      textAlign: 'center',
+      fontSize: 92,
+      fontWeight: 700,
+    }),
+    box('level', 20, 70, 60, 8, { textAlign: 'center', fontSize: 30 }),
+  ];
+}
+
 export function layoutFromElements(elements: TemplateBox[]): TemplateLayout {
   return { elements, updatedAt: new Date().toISOString() };
 }
@@ -73,4 +86,13 @@ export const SAMPLE_PREVIEW_DATA = {
   footerRight: 'Restrooms and elevators to the right',
   nowClock: '9:42 AM',
   nowDate: 'Thursday, September 24, 2026',
+};
+
+export const SAMPLE_IDLE_PREVIEW_DATA = {
+  ...SAMPLE_PREVIEW_DATA,
+  orgDisplayName: '',
+  eventTitle: '',
+  timeRange: '',
+  nextUp: '',
+  scheduleLines: [] as string[],
 };

@@ -3,15 +3,21 @@ import { doc, setDoc } from 'firebase/firestore';
 import { TemplateEditor } from '../../components/cardTemplate/TemplateEditor';
 import { useAuth } from '../../contexts/AuthContext';
 import { writeAuditLog } from '../../lib/audit';
-import { SAMPLE_PREVIEW_DATA } from '../../lib/cardTemplateDefaults';
+import {
+  SAMPLE_IDLE_PREVIEW_DATA,
+  SAMPLE_PREVIEW_DATA,
+} from '../../lib/cardTemplateDefaults';
 import {
   createTemplateSeed,
   ensureSeedTemplates,
   publishTemplate,
   restorePreviousPublished,
   saveTemplateDraft,
-  setGlobalDefaultTemplate,
+  setEventDefaultTemplate,
+  setIdleDefaultTemplate,
+  subscribeTemplateSettings,
   subscribeTemplates,
+  type TemplateSettings,
 } from '../../lib/cardTemplates';
 import { db } from '../../lib/firebase';
 import { isAdmin } from '../../lib/roles';
@@ -25,6 +31,7 @@ export function TemplatesPage() {
   const { user } = useAuth();
   const admin = isAdmin(user);
   const [templates, setTemplates] = useState<CardTemplate[]>([]);
+  const [settings, setSettings] = useState<TemplateSettings | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [working, setWorking] = useState<CardTemplate | null>(null);
   const [dirty, setDirty] = useState(false);
@@ -35,13 +42,15 @@ export function TemplatesPage() {
     void ensureSeedTemplates(db).catch((err) =>
       console.warn('seed templates', err),
     );
-    return subscribeTemplates(db, (list) => {
+    const unsubT = subscribeTemplates(db, (list) => {
       setTemplates(list);
-      setActiveId((cur) => {
-        const next = cur ?? list[0]?.id ?? null;
-        return next;
-      });
+      setActiveId((cur) => cur ?? list[0]?.id ?? null);
     });
+    const unsubS = subscribeTemplateSettings(db, setSettings);
+    return () => {
+      unsubT();
+      unsubS();
+    };
   }, []);
 
   useEffect(() => {
@@ -143,12 +152,23 @@ export function TemplatesPage() {
     }
   }
 
-  async function onMakeDefault() {
+  async function onMakeEventDefault() {
     if (!admin || !active) return;
     setBusy(true);
     try {
-      await setGlobalDefaultTemplate(db, active.id);
-      setMessage(`“${active.name}” is now the global default`);
+      await setEventDefaultTemplate(db, active.id);
+      setMessage(`“${active.name}” is the event default (rooms with bookings)`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onMakeIdleDefault() {
+    if (!admin || !active) return;
+    setBusy(true);
+    try {
+      await setIdleDefaultTemplate(db, active.id);
+      setMessage(`“${active.name}” is the idle default (rooms with no events)`);
     } finally {
       setBusy(false);
     }
@@ -166,6 +186,13 @@ export function TemplatesPage() {
   }
 
   const tabList = useMemo(() => templates, [templates]);
+  const isIdleDefault =
+    active?.id === settings?.idleTemplateId || active?.isIdleDefault;
+  const isEventDefault =
+    active?.id === settings?.defaultTemplateId || active?.isGlobalDefault;
+  const previewData = isIdleDefault
+    ? SAMPLE_IDLE_PREVIEW_DATA
+    : SAMPLE_PREVIEW_DATA;
 
   return (
     <section className="templates-page">
@@ -173,9 +200,9 @@ export function TemplatesPage() {
         <div>
           <h1>Room card templates</h1>
           <p>
-            Pick a theme, arrange elements on a 1920×1080 canvas, then publish.
-            Tablets use event → room → global default. Only published layouts
-            reach displays.
+            Idle default shows when a room has no events. When a booking is on
+            the schedule, tablets switch to the event default (or a
+            room/event-specific template). Publish before assigning.
           </p>
         </div>
         <div className="templates-page__actions">
@@ -200,9 +227,17 @@ export function TemplatesPage() {
                 type="button"
                 className="hub-btn hub-btn--soft"
                 disabled={!active || busy}
-                onClick={() => void onMakeDefault()}
+                onClick={() => void onMakeIdleDefault()}
               >
-                Set as default
+                Set as idle default
+              </button>
+              <button
+                type="button"
+                className="hub-btn hub-btn--soft"
+                disabled={!active || busy}
+                onClick={() => void onMakeEventDefault()}
+              >
+                Set as event default
               </button>
               <button
                 type="button"
@@ -252,9 +287,14 @@ export function TemplatesPage() {
                 Draft
               </span>
             )}
-            {t.isGlobalDefault && (
+            {(t.id === settings?.idleTemplateId || t.isIdleDefault) && (
               <span className="templates-page__pill templates-page__pill--default">
-                Default
+                Idle
+              </span>
+            )}
+            {(t.id === settings?.defaultTemplateId || t.isGlobalDefault) && (
+              <span className="templates-page__pill templates-page__pill--default">
+                Event
               </span>
             )}
           </button>
@@ -277,6 +317,8 @@ export function TemplatesPage() {
               {active.published
                 ? ` · Published ${new Date(active.published.updatedAt).toLocaleString()}`
                 : ' · Not published yet'}
+              {isIdleDefault ? ' · Idle default' : ''}
+              {isEventDefault ? ' · Event default' : ''}
             </p>
           </div>
           <TemplateEditor
@@ -284,7 +326,7 @@ export function TemplatesPage() {
             elements={active.draft.elements}
             onChangeTheme={setTheme}
             onChangeElements={setElements}
-            previewData={SAMPLE_PREVIEW_DATA}
+            previewData={previewData}
           />
         </>
       ) : (

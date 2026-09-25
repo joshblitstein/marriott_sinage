@@ -7,7 +7,8 @@ import { useScreenPresence } from '../../hooks/useScreenPresence';
 import { useEnsureTodaySchedule } from '../../hooks/useEnsureTodaySchedule';
 import {
   ensureSeedTemplates,
-  resolvePublishedLayout,
+  resolveEventLayout,
+  resolveIdleLayout,
   subscribeTemplateSettings,
   subscribeTemplates,
   type TemplateSettings,
@@ -135,14 +136,25 @@ export function DisplayPage() {
     return pickCurrentAndNext(eventsForToday, now, today);
   }, [data, now]);
 
-  const resolved = useMemo(
-    () =>
-      resolvePublishedLayout(templates, tplSettings, {
-        eventTemplateId: primary?.templateId,
-        roomTemplateId,
-      }),
-    [templates, tplSettings, primary?.templateId, roomTemplateId],
-  );
+  const today = dateKeyInHotelTz(now);
+  const events = data?.dateKey === today ? (data.events ?? []) : [];
+  const hasEvents = events.length > 0;
+
+  const resolved = useMemo(() => {
+    if (!hasEvents) {
+      return resolveIdleLayout(templates, tplSettings);
+    }
+    return resolveEventLayout(templates, tplSettings, {
+      eventTemplateId: primary?.templateId,
+      roomTemplateId,
+    });
+  }, [
+    hasEvents,
+    templates,
+    tplSettings,
+    primary?.templateId,
+    roomTemplateId,
+  ]);
 
   if (exists === false && !data) {
     return (
@@ -169,10 +181,49 @@ export function DisplayPage() {
 
   const roomName = data?.displayName || data?.name || slug;
   const roomId = data?.roomId || slug;
-  const today = dateKeyInHotelTz(now);
-  const events = data?.dateKey === today ? (data.events ?? []) : [];
-
   const level = levelLabelForRoom({ id: roomId });
+
+  // Idle / no events — global idle template (Empty room design)
+  if (!hasEvents) {
+    if (resolved) {
+      const idleData = {
+        roomName,
+        level,
+        orgDisplayName: '',
+        logoUrl: null as string | null,
+        eventTitle: '',
+        timeRange: '',
+        nextUp: '',
+        scheduleLines: [] as string[],
+        footerLeft: formatLongDate(now),
+        footerRight: 'Guest services · Lobby level',
+        nowClock: formatClock(now),
+        nowDate: formatLongDate(now),
+      };
+      return (
+        <>
+          {!embed && <DisplayKioskControls />}
+          <div
+            className={`door-template-stage${offline ? ' is-offline' : ''}${embed ? ' is-embed' : ''}`}
+          >
+            <TemplateCanvas
+              themeId={resolved.template.themeId}
+              elements={resolved.layout.elements}
+              data={idleData}
+              className="door-template-stage__canvas"
+            />
+          </div>
+        </>
+      );
+    }
+    return (
+      <>
+        {!embed && <DisplayKioskControls />}
+        <DoorEmpty roomName={roomName} roomId={roomId} />
+      </>
+    );
+  }
+
   const displayTitle =
     primary?.displayTitle?.trim() ||
     primary?.title ||
@@ -181,9 +232,9 @@ export function DisplayPage() {
   const previewData = {
     roomName,
     level,
-    orgDisplayName: primary?.orgDisplayName ?? (events.length ? '' : 'Available'),
+    orgDisplayName: primary?.orgDisplayName ?? '',
     logoUrl: primary?.logoUrl ?? null,
-    eventTitle: displayTitle || (events.length ? '' : 'No event in progress'),
+    eventTitle: displayTitle,
     timeRange: primary
       ? formatTimeRange(primary.startTime, primary.endTime)
       : '',
@@ -194,20 +245,16 @@ export function DisplayPage() {
         : primary
           ? `${primaryMode === 'next' ? 'Up next' : 'Today'} · ${primary.orgDisplayName}`
           : '',
-    scheduleLines:
-      events.length > 0
-        ? events.map((ev) => {
-            const title = ev.displayTitle?.trim() || ev.title;
-            return `${formatTimeRange(ev.startTime, ev.endTime)} · ${ev.orgDisplayName}${title ? ` — ${title}` : ''}`;
-          })
-        : ['No events scheduled today'],
+    scheduleLines: events.map((ev) => {
+      const title = ev.displayTitle?.trim() || ev.title;
+      return `${formatTimeRange(ev.startTime, ev.endTime)} · ${ev.orgDisplayName}${title ? ` — ${title}` : ''}`;
+    }),
     footerLeft: formatLongDate(now),
     footerRight: 'Restrooms and elevators to the right',
     nowClock: formatClock(now),
     nowDate: formatLongDate(now),
   };
 
-  // Prefer published template whenever one resolves (room / event / default)
   if (resolved) {
     return (
       <>
@@ -222,15 +269,6 @@ export function DisplayPage() {
             className="door-template-stage__canvas"
           />
         </div>
-      </>
-    );
-  }
-
-  if (events.length === 0) {
-    return (
-      <>
-        {!embed && <DisplayKioskControls />}
-        <DoorEmpty roomName={roomName} roomId={roomId} />
       </>
     );
   }

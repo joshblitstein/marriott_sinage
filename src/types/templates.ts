@@ -54,8 +54,10 @@ export type CardTemplate = {
   draft: TemplateLayout;
   published: TemplateLayout | null;
   previousPublished: TemplateLayout | null;
-  /** When true, used as global default if set in settings (or first published). */
+  /** Global default when the room has an event (event theme). */
   isGlobalDefault?: boolean;
+  /** Global default when the room has no events (idle / empty sign). */
+  isIdleDefault?: boolean;
   createdAt: string;
   updatedAt: string;
 };

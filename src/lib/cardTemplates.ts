@@ -11,6 +11,7 @@ import {
 import {
   cardsLayoutElements,
   classicLayoutElements,
+  idleLayoutElements,
   layoutFromElements,
 } from './cardTemplateDefaults';
 import type {
@@ -23,8 +24,16 @@ export const TEMPLATES_COL = 'templates';
 export const TEMPLATE_SETTINGS_DOC = 'displayTemplates';
 
 export type TemplateSettings = {
+  /** Used when the room has an active/upcoming event today. */
   defaultTemplateId: string | null;
+  /** Used when the room has no events today (idle sign). */
+  idleTemplateId: string | null;
   updatedAt?: string;
+};
+
+export type ResolvedTemplate = {
+  template: CardTemplate;
+  layout: TemplateLayout;
 };
 
 export function newTemplateId(): string {
@@ -34,11 +43,15 @@ export function newTemplateId(): string {
 export function createTemplateSeed(
   name: string,
   themeId: CardThemeId,
-  variant: 'classic' | 'cards' = 'classic',
+  variant: 'classic' | 'cards' | 'idle' = 'classic',
 ): CardTemplate {
   const now = new Date().toISOString();
   const elements =
-    variant === 'cards' ? cardsLayoutElements() : classicLayoutElements();
+    variant === 'idle'
+      ? idleLayoutElements()
+      : variant === 'cards'
+        ? cardsLayoutElements()
+        : classicLayoutElements();
   const layout = layoutFromElements(elements);
   return {
     id: newTemplateId(),
@@ -48,6 +61,7 @@ export function createTemplateSeed(
     published: null,
     previousPublished: null,
     isGlobalDefault: false,
+    isIdleDefault: false,
     createdAt: now,
     updatedAt: now,
   };
@@ -55,37 +69,147 @@ export function createTemplateSeed(
 
 export async function ensureSeedTemplates(db: Firestore): Promise<void> {
   const snap = await getDocs(collection(db, TEMPLATES_COL));
-  if (!snap.empty) return;
+  if (!snap.empty) {
+    await ensureIdleAndEventDefaults(db);
+    return;
+  }
+
+  const idle = createTemplateSeed('Empty room', 'classic', 'idle');
+  idle.isIdleDefault = true;
+  idle.published = { ...idle.draft };
 
   const classic = createTemplateSeed('Classic Oyster', 'classic', 'classic');
   classic.isGlobalDefault = true;
+  classic.published = { ...classic.draft };
+
   const cards = createTemplateSeed('Cards Panel', 'cards', 'cards');
   cards.themeId = 'cards';
+  cards.published = { ...cards.draft };
 
   const charcoal = createTemplateSeed('Charcoal Night', 'charcoal', 'classic');
   charcoal.themeId = 'charcoal';
+  charcoal.published = { ...charcoal.draft };
 
   const bold = createTemplateSeed('Oyster Bold', 'oyster-bold', 'classic');
   bold.themeId = 'oyster-bold';
+  bold.published = { ...bold.draft };
 
   const steel = createTemplateSeed('Steel Gray', 'steel', 'cards');
   steel.themeId = 'steel';
+  steel.published = { ...steel.draft };
 
-  // Publish classic as default so tablets have something immediately
-  classic.published = { ...classic.draft };
-  classic.previousPublished = null;
-
-  for (const t of [classic, cards, charcoal, bold, steel]) {
+  for (const t of [idle, classic, cards, charcoal, bold, steel]) {
     await setDoc(doc(db, TEMPLATES_COL, t.id), t);
   }
   await setDoc(
     doc(db, 'settings', TEMPLATE_SETTINGS_DOC),
     {
+      idleTemplateId: idle.id,
       defaultTemplateId: classic.id,
       updatedAt: new Date().toISOString(),
     } satisfies TemplateSettings,
     { merge: true },
   );
+}
+
+/** For existing installs: ensure idle + event defaults exist and are linked. */
+export async function ensureIdleAndEventDefaults(db: Firestore): Promise<void> {
+  const [tplSnap, settingsSnap] = await Promise.all([
+    getDocs(collection(db, TEMPLATES_COL)),
+    getDoc(doc(db, 'settings', TEMPLATE_SETTINGS_DOC)),
+  ]);
+  const templates = tplSnap.docs.map(
+    (d) => ({ id: d.id, ...d.data() }) as CardTemplate,
+  );
+  const settings = (settingsSnap.data() as TemplateSettings | undefined) ?? {
+    defaultTemplateId: null,
+    idleTemplateId: null,
+  };
+
+  let idleId = settings.idleTemplateId;
+  let eventId = settings.defaultTemplateId;
+
+  const idleOk = idleId
+    ? templates.some((t) => t.id === idleId && t.published?.elements?.length)
+    : false;
+
+  if (!idleOk) {
+    const named = templates.find(
+      (t) =>
+        t.isIdleDefault ||
+        t.name.toLowerCase().includes('empty') ||
+        t.name.toLowerCase().includes('idle'),
+    );
+    if (named?.published?.elements?.length) {
+      idleId = named.id;
+    } else if (named) {
+      // Publish existing idle-ish draft
+      await setDoc(
+        doc(db, TEMPLATES_COL, named.id),
+        {
+          published: named.draft,
+          isIdleDefault: true,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true },
+      );
+      idleId = named.id;
+    } else {
+      const idle = createTemplateSeed('Empty room', 'classic', 'idle');
+      idle.isIdleDefault = true;
+      idle.published = { ...idle.draft };
+      await setDoc(doc(db, TEMPLATES_COL, idle.id), idle);
+      idleId = idle.id;
+    }
+  }
+
+  const eventOk = eventId
+    ? templates.some((t) => t.id === eventId && t.published?.elements?.length)
+    : false;
+  if (!eventOk) {
+    const eventTpl =
+      templates.find((t) => t.isGlobalDefault && t.published) ??
+      templates.find(
+        (t) => t.published && t.id !== idleId && t.name !== 'Empty room',
+      ) ??
+      templates.find((t) => t.published);
+    eventId = eventTpl?.id ?? null;
+  }
+
+  await setDoc(
+    doc(db, 'settings', TEMPLATE_SETTINGS_DOC),
+    {
+      idleTemplateId: idleId ?? null,
+      defaultTemplateId: eventId ?? null,
+      updatedAt: new Date().toISOString(),
+    } satisfies TemplateSettings,
+    { merge: true },
+  );
+
+  // Keep flags in sync
+  for (const t of templates) {
+    const nextIdle = t.id === idleId;
+    const nextEvent = t.id === eventId;
+    if (Boolean(t.isIdleDefault) !== nextIdle || Boolean(t.isGlobalDefault) !== nextEvent) {
+      await setDoc(
+        doc(db, TEMPLATES_COL, t.id),
+        {
+          isIdleDefault: nextIdle,
+          isGlobalDefault: nextEvent,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true },
+      );
+    }
+  }
+  // New idle may not be in `templates` snapshot list above
+  if (idleId && !templates.some((t) => t.id === idleId)) {
+    await setDoc(
+      doc(db, TEMPLATES_COL, idleId),
+      { isIdleDefault: true, updatedAt: new Date().toISOString() },
+      { merge: true },
+    );
+  }
 }
 
 export async function saveTemplateDraft(
@@ -144,16 +268,19 @@ export async function restorePreviousPublished(
   return next;
 }
 
-export async function setGlobalDefaultTemplate(
+/** Global default for rooms that currently have an event. */
+export async function setEventDefaultTemplate(
   db: Firestore,
   templateId: string,
 ): Promise<void> {
   const snap = await getDocs(collection(db, TEMPLATES_COL));
   for (const d of snap.docs) {
-    const isDefault = d.id === templateId;
     await setDoc(
       doc(db, TEMPLATES_COL, d.id),
-      { isGlobalDefault: isDefault, updatedAt: new Date().toISOString() },
+      {
+        isGlobalDefault: d.id === templateId,
+        updatedAt: new Date().toISOString(),
+      },
       { merge: true },
     );
   }
@@ -162,9 +289,43 @@ export async function setGlobalDefaultTemplate(
     {
       defaultTemplateId: templateId,
       updatedAt: new Date().toISOString(),
-    } satisfies TemplateSettings,
+    } satisfies Partial<TemplateSettings>,
     { merge: true },
   );
+}
+
+/** Global default for rooms with no events today. */
+export async function setIdleDefaultTemplate(
+  db: Firestore,
+  templateId: string,
+): Promise<void> {
+  const snap = await getDocs(collection(db, TEMPLATES_COL));
+  for (const d of snap.docs) {
+    await setDoc(
+      doc(db, TEMPLATES_COL, d.id),
+      {
+        isIdleDefault: d.id === templateId,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true },
+    );
+  }
+  await setDoc(
+    doc(db, 'settings', TEMPLATE_SETTINGS_DOC),
+    {
+      idleTemplateId: templateId,
+      updatedAt: new Date().toISOString(),
+    } satisfies Partial<TemplateSettings>,
+    { merge: true },
+  );
+}
+
+/** @deprecated use setEventDefaultTemplate */
+export async function setGlobalDefaultTemplate(
+  db: Firestore,
+  templateId: string,
+): Promise<void> {
+  return setEventDefaultTemplate(db, templateId);
 }
 
 export function subscribeTemplates(
@@ -184,45 +345,67 @@ export function subscribeTemplateSettings(
 ): Unsubscribe {
   return onSnapshot(doc(db, 'settings', TEMPLATE_SETTINGS_DOC), (snap) => {
     if (!snap.exists()) {
-      cb({ defaultTemplateId: null });
+      cb({ defaultTemplateId: null, idleTemplateId: null });
       return;
     }
-    cb(snap.data() as TemplateSettings);
+    const data = snap.data() as TemplateSettings;
+    cb({
+      defaultTemplateId: data.defaultTemplateId ?? null,
+      idleTemplateId: data.idleTemplateId ?? null,
+      updatedAt: data.updatedAt,
+    });
   });
 }
 
+function tryPublished(
+  byId: Map<string, CardTemplate>,
+  id: string | null | undefined,
+): ResolvedTemplate | null {
+  if (!id) return null;
+  const t = byId.get(id);
+  if (t?.published?.elements?.length) {
+    return { template: t, layout: t.published };
+  }
+  return null;
+}
+
+/** Idle / no-event sign — global idle default (room overrides not used). */
+export function resolveIdleLayout(
+  templates: CardTemplate[],
+  settings: TemplateSettings | null,
+): ResolvedTemplate | null {
+  const byId = new Map(templates.map((t) => [t.id, t]));
+  return (
+    tryPublished(byId, settings?.idleTemplateId) ??
+    (() => {
+      const def = templates.find((t) => t.isIdleDefault && t.published);
+      return def?.published ? { template: def, layout: def.published } : null;
+    })()
+  );
+}
+
 /**
- * Resolve which published layout a screen should use.
- * Order: event template → room template → global default → first published → null.
- * If a requested id exists but is unpublished, skip it (drafts never reach tablets).
+ * Event sign — event template → room template → global event default.
  */
-export function resolvePublishedLayout(
+export function resolveEventLayout(
   templates: CardTemplate[],
   settings: TemplateSettings | null,
   opts: {
     eventTemplateId?: string | null;
     roomTemplateId?: string | null;
   },
-): { template: CardTemplate; layout: TemplateLayout } | null {
+): ResolvedTemplate | null {
   const byId = new Map(templates.map((t) => [t.id, t]));
-
-  const tryId = (id: string | null | undefined) => {
-    if (!id) return null;
-    const t = byId.get(id);
-    if (t?.published?.elements?.length) {
-      return { template: t, layout: t.published };
-    }
-    return null;
-  };
-
   return (
-    tryId(opts.eventTemplateId) ??
-    tryId(opts.roomTemplateId) ??
-    tryId(settings?.defaultTemplateId) ??
+    tryPublished(byId, opts.eventTemplateId) ??
+    tryPublished(byId, opts.roomTemplateId) ??
+    tryPublished(byId, settings?.defaultTemplateId) ??
     (() => {
       const def = templates.find((t) => t.isGlobalDefault && t.published);
       if (def?.published) return { template: def, layout: def.published };
-      const any = templates.find((t) => t.published?.elements?.length);
+      const any = templates.find(
+        (t) => t.published?.elements?.length && !t.isIdleDefault,
+      );
       return any?.published
         ? { template: any, layout: any.published }
         : null;
@@ -230,14 +413,16 @@ export function resolvePublishedLayout(
   );
 }
 
-/** True when the room/event points at a template that has no published layout yet. */
-export function isUnpublishedAssignment(
+/** @deprecated use resolveEventLayout / resolveIdleLayout */
+export function resolvePublishedLayout(
   templates: CardTemplate[],
-  templateId: string | null | undefined,
-): boolean {
-  if (!templateId) return false;
-  const t = templates.find((x) => x.id === templateId);
-  return Boolean(t && !t.published?.elements?.length);
+  settings: TemplateSettings | null,
+  opts: {
+    eventTemplateId?: string | null;
+    roomTemplateId?: string | null;
+  },
+): ResolvedTemplate | null {
+  return resolveEventLayout(templates, settings, opts);
 }
 
 export async function getTemplate(
@@ -249,7 +434,6 @@ export async function getTemplate(
   return { id: snap.id, ...snap.data() } as CardTemplate;
 }
 
-/** Snap a % value to grid (default 1%). */
 export function snapPercent(value: number, grid = 1): number {
   const g = grid > 0 ? grid : 1;
   return Math.round(value / g) * g;

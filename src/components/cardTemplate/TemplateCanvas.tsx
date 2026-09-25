@@ -61,7 +61,12 @@ export function TemplateCanvas({
             height: `${el.h}%`,
             zIndex: el.zIndex ?? 1,
             textAlign: el.textAlign ?? 'left',
-            // Authored for 1080p; scale with container height (cqh)
+            alignItems:
+              el.textAlign === 'center'
+                ? 'center'
+                : el.textAlign === 'right'
+                  ? 'flex-end'
+                  : 'flex-start',
             fontSize: el.fontSize
               ? `calc(${el.fontSize} * 100cqh / 1080)`
               : undefined,
