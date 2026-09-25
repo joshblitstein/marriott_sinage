@@ -13,10 +13,13 @@ import { normalizeSpaceName } from '../../lib/normalize';
 import { db } from '../../lib/firebase';
 import { rebuildRoomDisplaysForDate } from '../../lib/schedule';
 import { dateKeyInHotelTz } from '../../lib/time';
+import { subscribeTemplates } from '../../lib/cardTemplates';
 import type { Room } from '../../types';
+import type { CardTemplate } from '../../types/templates';
 
 export function RoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [templates, setTemplates] = useState<CardTemplate[]>([]);
   const [showCreate, setShowCreate] = useState(false);
 
   useEffect(() => {
@@ -28,6 +31,8 @@ export function RoomsPage() {
     );
     return unsub;
   }, []);
+
+  useEffect(() => subscribeTemplates(db, setTemplates), []);
 
   async function toggleActive(room: Room) {
     await updateDoc(doc(db, 'rooms', room.id), { active: !room.active });
@@ -48,6 +53,12 @@ export function RoomsPage() {
       name: displayName,
     });
     await rebuildRoomDisplaysForDate(db, dateKeyInHotelTz());
+  }
+
+  async function saveTemplateId(room: Room, templateId: string) {
+    await updateDoc(doc(db, 'rooms', room.id), {
+      templateId: templateId || null,
+    });
   }
 
   async function createRoom(e: FormEvent<HTMLFormElement>) {
@@ -127,6 +138,7 @@ export function RoomsPage() {
             <th>Room</th>
             <th>Slug / URL</th>
             <th>Active</th>
+            <th>Card template</th>
             <th>Booking aliases (one per line)</th>
           </tr>
         </thead>
@@ -155,6 +167,9 @@ export function RoomsPage() {
             </td>
             <td>
               <span className="meta">Always on</span>
+            </td>
+            <td>
+              <span className="meta">—</span>
             </td>
             <td>
               <span className="meta">Aggregates active rooms — no aliases</span>
@@ -192,6 +207,28 @@ export function RoomsPage() {
                 >
                   {room.active ? 'Active' : 'Inactive'}
                 </button>
+              </td>
+              <td>
+                <select
+                  value={room.templateId ?? ''}
+                  onChange={(e) => void saveTemplateId(room, e.target.value)}
+                >
+                  <option value="">Global default</option>
+                  {templates
+                    .filter((t) => t.published)
+                    .map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                </select>
+                {templates.length > 0 &&
+                  templates.every((t) => !t.published) && (
+                    <div className="meta">
+                      No published templates yet — open Card templates and
+                      Publish one first.
+                    </div>
+                  )}
               </td>
               <td>
                 <textarea

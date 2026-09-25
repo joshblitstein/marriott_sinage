@@ -90,6 +90,8 @@ export type Room = {
   /** Set by display tablet while /display/:slug is open */
   screenOnline?: boolean;
   lastSeenAt?: string;
+  /** Published room card template (overrides global default). */
+  templateId?: string | null;
 };
 
 export type Organization = {
@@ -110,6 +112,13 @@ export type SignageEvent = {
   orgId: string | null;
   orgNameRaw: string;
   title: string;
+  /**
+   * Staff override for tablet title (replaces Delphi Post As / Signage).
+   * CITY import never writes this field so re-import preserves it.
+   */
+  displayTitleOverride?: string | null;
+  /** Optional published template for this event (highest priority). */
+  templateId?: string | null;
   startTime: string; // ISO
   endTime: string; // ISO
   functionType: string;
@@ -128,6 +137,9 @@ export type DisplayEventSnapshot = {
   orgDisplayName: string;
   logoUrl: string | null;
   title: string;
+  /** Resolved display title (override ?? title) */
+  displayTitle?: string;
+  templateId?: string | null;
   startTime: string;
   endTime: string;
   functionType: string;

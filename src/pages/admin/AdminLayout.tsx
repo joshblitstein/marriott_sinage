@@ -31,6 +31,7 @@ const NAV: {
   { to: '/admin/accounts', label: 'Accounts', leadOnly: true },
   { to: '/admin/security', label: 'Security' },
   { to: '/admin/directory', label: 'Directory layout', adminOnly: true },
+  { to: '/admin/templates', label: 'Card templates', adminOnly: true },
   { to: '/admin/history', label: 'History', leadOnly: true },
   { to: '/admin/preview', label: 'Preview' },
 ];

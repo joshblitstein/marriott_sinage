@@ -27,6 +27,8 @@ import {
 } from '../../lib/time';
 import { isScreenOnline } from '../../lib/screenPresence';
 import type { DisplayEventSnapshot, Room, SignageEvent } from '../../types';
+import type { CardTemplate } from '../../types/templates';
+import { subscribeTemplates } from '../../lib/cardTemplates';
 
 type RoomWithSeen = Room & {
   lastSeenAt?: string;
@@ -124,6 +126,7 @@ export function AdminDashboard() {
   const [rooms, setRooms] = useState<RoomWithSeen[]>([]);
   const [events, setEvents] = useState<SignageEvent[]>([]);
   const [monthEvents, setMonthEvents] = useState<SignageEvent[]>([]);
+  const [templates, setTemplates] = useState<CardTemplate[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<SignageEvent | null>(null);
   const [view, setView] = useState<'day' | 'month'>('day');
@@ -135,6 +138,8 @@ export function AdminDashboard() {
     const t = setInterval(() => setNowMs(Date.now()), 5_000);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => subscribeTemplates(db, setTemplates), []);
 
   // Deep-link from global search: /admin?date=YYYY-MM-DD&event=id
   useEffect(() => {
@@ -285,6 +290,9 @@ export function AdminDashboard() {
     const fd = new FormData(e.currentTarget);
     const roomId = String(fd.get('roomId'));
     const title = String(fd.get('title'));
+    const displayTitleOverride = String(fd.get('displayTitleOverride') ?? '').trim();
+    const templateIdRaw = String(fd.get('templateId') ?? '');
+    const templateId = templateIdRaw || null;
     const orgName = String(fd.get('orgName'));
     const startLocal = String(fd.get('start'));
     const endLocal = String(fd.get('end'));
@@ -302,6 +310,8 @@ export function AdminDashboard() {
         orgId: editing?.orgId ?? null,
         orgNameRaw: orgName,
         title,
+        displayTitleOverride: displayTitleOverride || null,
+        templateId,
         startTime,
         endTime,
         functionType: editing?.functionType ?? 'Manual',
@@ -312,7 +322,7 @@ export function AdminDashboard() {
         dateKey,
         updatedAt: now,
         ...(editing?.orderNumber ? { orderNumber: editing.orderNumber } : {}),
-      } satisfies SignageEvent,
+      },
       { merge: true },
     );
     await rebuildRoomDisplaysForDate(db, dateKey);
@@ -575,6 +585,31 @@ export function AdminDashboard() {
               Title / Post As
               <input name="title" required defaultValue={editing?.title ?? ''} />
             </label>
+            <label className="hub-form__span">
+              Display title override
+              <input
+                name="displayTitleOverride"
+                placeholder="Optional — replaces title on tablets"
+                defaultValue={editing?.displayTitleOverride ?? ''}
+              />
+            </label>
+            <label>
+              Card template
+              <select
+                name="templateId"
+                defaultValue={editing?.templateId ?? ''}
+              >
+                <option value="">Room / global default</option>
+                {templates
+                  .filter((t) => t.published)
+                  .map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                      {t.isGlobalDefault ? ' (default)' : ''}
+                    </option>
+                  ))}
+              </select>
+            </label>
             <label>
               Start
               <input
@@ -663,7 +698,7 @@ export function AdminDashboard() {
                             <SourceBadge source={primary.source} />
                           </div>
                           <p>
-                            {primary.title}
+                            {primary.displayTitle || primary.title}
                             {primary.functionType &&
                             primary.functionType !== 'Manual'
                               ? ` · ${primary.functionType}`

@@ -52,6 +52,8 @@ export async function rebuildRoomDisplaysForDate(
 
     const snapshots: DisplayEventSnapshot[] = resolved.map((e) => {
       const org = e.orgId ? orgs.get(e.orgId) : undefined;
+      const displayTitle =
+        e.displayTitleOverride?.trim() || e.title;
       return {
         id: e.id,
         orgId: e.orgId,
@@ -59,6 +61,8 @@ export async function rebuildRoomDisplaysForDate(
         orgDisplayName: org?.displayName ?? e.orgNameRaw,
         logoUrl: org?.logoUrl ?? null,
         title: e.title,
+        displayTitle,
+        templateId: e.templateId ?? null,
         startTime: e.startTime,
         endTime: e.endTime,
         functionType: e.functionType,
