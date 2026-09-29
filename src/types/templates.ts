@@ -20,7 +20,12 @@ export type TemplateElementKind =
   | 'scheduleList'
   | 'footer'
   | 'customText'
-  | 'image';
+  | 'image'
+  /** Live / decorative widgets (Templates editor “Add widget”) */
+  | 'weather'
+  | 'date'
+  | 'divider'
+  | 'tip';
 
 /** Bounding box in % of the 1920×1080 canvas (0–100). */
 export type TemplateBox = {
@@ -91,4 +96,9 @@ export type TemplatePreviewData = {
   footerRight: string;
   nowClock: string;
   nowDate: string;
+  /** Charlotte weather (Open-Meteo) — empty when loading / offline */
+  weatherTemp?: string;
+  weatherLabel?: string;
+  weatherLine?: string;
+  weatherHumidity?: string;
 };

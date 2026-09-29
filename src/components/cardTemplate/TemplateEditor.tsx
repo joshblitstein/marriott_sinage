@@ -30,6 +30,32 @@ const ADDABLE: { kind: TemplateElementKind; label: string }[] = [
   { kind: 'footer', label: 'Footer' },
 ];
 
+const WIDGETS: { kind: TemplateElementKind; label: string }[] = [
+  { kind: 'weather', label: 'Weather' },
+  { kind: 'date', label: 'Date' },
+  { kind: 'tip', label: 'Guest tip' },
+  { kind: 'divider', label: 'Divider' },
+];
+
+const WIDGET_DEFAULTS: Partial<
+  Record<
+    TemplateElementKind,
+    { w: number; h: number; fontSize?: number; content?: string }
+  >
+> = {
+  weather: { w: 18, h: 18, fontSize: 22 },
+  date: { w: 28, h: 12, fontSize: 24 },
+  tip: {
+    w: 28,
+    h: 14,
+    fontSize: 22,
+    content: 'Restrooms and elevators to the right',
+  },
+  divider: { w: 40, h: 2, fontSize: 16 },
+  orgLogo: { w: 14, h: 22 },
+  image: { w: 14, h: 22 },
+};
+
 type Props = {
   themeId: CardThemeId;
   elements: TemplateBox[];
@@ -126,15 +152,21 @@ export function TemplateEditor({
 
   function addElement(kind: TemplateElementKind) {
     const id = `${kind}_${Date.now().toString(36)}`;
+    const defaults = WIDGET_DEFAULTS[kind];
     const el: TemplateBox = {
       id,
       kind,
       x: 10,
       y: 10,
-      w: kind === 'orgLogo' || kind === 'image' ? 14 : 36,
-      h: kind === 'orgLogo' || kind === 'image' ? 22 : 8,
-      content: kind === 'customText' ? 'Custom text' : undefined,
-      fontSize: 28,
+      w: defaults?.w ?? 36,
+      h: defaults?.h ?? 8,
+      content:
+        kind === 'customText'
+          ? 'Custom text'
+          : kind === 'tip'
+            ? defaults?.content
+            : undefined,
+      fontSize: defaults?.fontSize ?? 28,
     };
     onChangeElements([...elements, el]);
     setSelectedId(id);
@@ -188,6 +220,23 @@ export function TemplateEditor({
           ))}
         </div>
 
+        <h3>Add widget</h3>
+        <p className="tpl-editor__hint tpl-editor__hint--block">
+          Weather uses the free Open-Meteo API for Charlotte.
+        </p>
+        <div className="tpl-editor__add">
+          {WIDGETS.map((a) => (
+            <button
+              key={a.kind}
+              type="button"
+              className="hub-btn hub-btn--soft"
+              onClick={() => addElement(a.kind)}
+            >
+              {a.label}
+            </button>
+          ))}
+        </div>
+
         {selected && (
           <div className="tpl-editor__props">
             <h3>Selected · {selected.kind}</h3>
@@ -205,9 +254,15 @@ export function TemplateEditor({
                 }
               />
             </label>
-            {(selected.kind === 'customText' || selected.kind === 'image') && (
+            {(selected.kind === 'customText' ||
+              selected.kind === 'tip' ||
+              selected.kind === 'image') && (
               <label>
-                {selected.kind === 'image' ? 'Image URL' : 'Text'}
+                {selected.kind === 'image'
+                  ? 'Image URL'
+                  : selected.kind === 'tip'
+                    ? 'Tip text'
+                    : 'Text'}
                 <input
                   value={
                     selected.kind === 'image'

@@ -9,6 +9,7 @@ import { FloorPlanPage } from './pages/admin/FloorPlanPage';
 import { HistoryPage } from './pages/admin/HistoryPage';
 import { ImportPage } from './pages/admin/ImportPage';
 import { LoginPage } from './pages/admin/LoginPage';
+import { ForgotPasswordPage } from './pages/admin/ForgotPasswordPage';
 import { OrganizationsPage } from './pages/admin/OrganizationsPage';
 import { PreviewPage } from './pages/admin/PreviewPage';
 import { RoomsPage } from './pages/admin/RoomsPage';
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="/display/lobby" element={<LobbyPage />} />
         <Route path="/display/:slug" element={<DisplayPage />} />
         <Route path="/admin/login" element={<LoginPage />} />
+        <Route path="/admin/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/admin" element={<RequireAuth />}>
           <Route element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />

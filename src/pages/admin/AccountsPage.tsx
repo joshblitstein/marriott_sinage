@@ -212,7 +212,11 @@ export function AccountsPage() {
     }
     const now = new Date().toISOString();
     const passwordHash = await hashPassword(next);
-    await updateDoc(doc(db, 'users', row.id), { passwordHash, updatedAt: now });
+    await updateDoc(doc(db, 'users', row.id), {
+      passwordHash,
+      passwordResetRequestedAt: null,
+      updatedAt: now,
+    });
     await writeAuditLog(db, {
       actor: user,
       action: 'account.password_reset',
@@ -307,6 +311,11 @@ export function AccountsPage() {
                             {row.username}
                             {isSelf ? ' (You)' : ''}
                           </strong>
+                          {row.passwordResetRequestedAt && (
+                            <span className="accounts-reset-badge">
+                              Reset requested
+                            </span>
+                          )}
                           {row.name && (
                             <span className="accounts-table__name">{row.name}</span>
                           )}
@@ -361,7 +370,11 @@ export function AccountsPage() {
                           <div className="accounts-actions">
                             <button
                               type="button"
-                              className="accounts-actions__link"
+                              className={
+                                row.passwordResetRequestedAt
+                                  ? 'accounts-actions__link accounts-actions__link--emphasis'
+                                  : 'accounts-actions__link'
+                              }
                               onClick={() => void resetPassword(row)}
                             >
                               Reset password

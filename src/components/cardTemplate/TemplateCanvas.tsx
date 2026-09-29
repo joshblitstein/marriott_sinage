@@ -143,6 +143,46 @@ function ElementContent({
       ) : (
         <div className="tpl-image tpl-image--empty">Image</div>
       );
+    case 'weather':
+      return (
+        <div className="tpl-widget tpl-widget--weather">
+          <span className="tpl-widget__eyebrow">Charlotte</span>
+          <span className="tpl-widget__temp">
+            {data.weatherTemp?.trim() || '—°'}
+          </span>
+          <span className="tpl-widget__label">
+            {data.weatherLabel?.trim() || 'Weather'}
+          </span>
+          {data.weatherHumidity?.trim() ? (
+            <span className="tpl-widget__meta">{data.weatherHumidity}</span>
+          ) : null}
+        </div>
+      );
+    case 'date':
+      return (
+        <div className="tpl-widget tpl-widget--date">
+          <span className="tpl-widget__eyebrow">Today</span>
+          <AutoFitText
+            className="tpl-widget__date"
+            text={data.nowDate || data.footerLeft || ''}
+          />
+        </div>
+      );
+    case 'divider':
+      return <div className="tpl-widget tpl-widget--divider" aria-hidden />;
+    case 'tip':
+      return (
+        <div className="tpl-widget tpl-widget--tip">
+          <span className="tpl-widget__eyebrow">Good to know</span>
+          <AutoFitText
+            className="tpl-widget__tip"
+            text={
+              el.content?.trim() ||
+              'Restrooms and elevators to the right'
+            }
+          />
+        </div>
+      );
     default:
       return null;
   }

@@ -7,6 +7,8 @@ import {
   SAMPLE_IDLE_PREVIEW_DATA,
   SAMPLE_PREVIEW_DATA,
 } from '../../lib/cardTemplateDefaults';
+import { useCharlotteWeather } from '../../hooks/useCharlotteWeather';
+import { weatherPreviewFields } from '../../lib/weather';
 import {
   createTemplateSeed,
   ensureSeedTemplates,
@@ -190,9 +192,11 @@ export function TemplatesPage() {
     active?.id === settings?.idleTemplateId || active?.isIdleDefault;
   const isEventDefault =
     active?.id === settings?.defaultTemplateId || active?.isGlobalDefault;
-  const previewData = isIdleDefault
-    ? SAMPLE_IDLE_PREVIEW_DATA
-    : SAMPLE_PREVIEW_DATA;
+  const weather = useCharlotteWeather(true);
+  const previewData = useMemo(() => {
+    const base = isIdleDefault ? SAMPLE_IDLE_PREVIEW_DATA : SAMPLE_PREVIEW_DATA;
+    return { ...base, ...weatherPreviewFields(weather) };
+  }, [isIdleDefault, weather]);
 
   return (
     <section className="templates-page">

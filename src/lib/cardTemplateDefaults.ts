@@ -22,15 +22,14 @@ function box(
 /** Layout inspired by existing DoorClassic (flat ballroom door). */
 export function classicLayoutElements(): TemplateBox[] {
   return [
-    box('brand', 3, 3, 28, 8),
-    box('level', 72, 3.5, 25, 6, { textAlign: 'right', fontSize: 22 }),
-    box('roomName', 3, 14, 48, 12, { fontSize: 72, fontWeight: 300 }),
-    box('orgLogo', 3, 30, 12, 22),
-    box('orgName', 17, 30, 40, 8, { fontSize: 48, fontWeight: 300 }),
-    box('timeRange', 17, 39, 40, 6, { fontSize: 28 }),
-    box('eventTitle', 17, 46, 40, 6, { fontSize: 26 }),
-    box('nextUp', 3, 58, 48, 8, { fontSize: 24 }),
-    box('scheduleList', 54, 14, 43, 70, { fontSize: 22 }),
+    box('brand', 3, 3, 26, 10),
+    box('roomName', 3, 14, 46, 11, { fontSize: 68, fontWeight: 300 }),
+    box('orgLogo', 3, 28, 10, 18),
+    box('orgName', 15, 28, 34, 10, { fontSize: 40, fontWeight: 300 }),
+    box('timeRange', 15, 39, 34, 5, { fontSize: 26 }),
+    box('eventTitle', 15, 45, 34, 6, { fontSize: 24 }),
+    box('nextUp', 3, 68, 46, 8, { fontSize: 24 }),
+    box('scheduleList', 52, 14, 45, 70, { fontSize: 30 }),
     box('footer', 3, 90, 94, 6, { fontSize: 20 }),
   ];
 }
@@ -41,13 +40,13 @@ export function cardsLayoutElements(): TemplateBox[] {
     box('brand', 3, 3, 26, 8),
     box('clock', 78, 3.5, 19, 6, { textAlign: 'right', fontSize: 28 }),
     box('level', 3, 11, 30, 5, { fontSize: 20 }),
-    box('roomName', 3, 16, 55, 10, { fontSize: 64, fontWeight: 300 }),
-    box('orgName', 5, 32, 42, 8, { fontSize: 42, fontWeight: 300 }),
-    box('timeRange', 5, 42, 42, 5, { fontSize: 24 }),
-    box('eventTitle', 5, 48, 42, 5, { fontSize: 22 }),
-    box('orgLogo', 5, 56, 14, 22),
-    box('nextUp', 5, 80, 42, 6, { fontSize: 22 }),
-    box('scheduleList', 52, 28, 45, 54, { fontSize: 22 }),
+    box('roomName', 3, 16, 46, 10, { fontSize: 60, fontWeight: 300 }),
+    box('orgName', 5, 30, 42, 8, { fontSize: 38, fontWeight: 300 }),
+    box('timeRange', 5, 40, 42, 5, { fontSize: 24 }),
+    box('eventTitle', 5, 46, 42, 5, { fontSize: 22 }),
+    box('orgLogo', 5, 54, 12, 18),
+    box('nextUp', 5, 76, 42, 6, { fontSize: 22 }),
+    box('scheduleList', 52, 26, 45, 56, { fontSize: 28 }),
     box('footer', 3, 90, 94, 6, { fontSize: 20 }),
   ];
 }
@@ -86,6 +85,10 @@ export const SAMPLE_PREVIEW_DATA = {
   footerRight: 'Restrooms and elevators to the right',
   nowClock: '9:42 AM',
   nowDate: 'Thursday, September 24, 2026',
+  weatherTemp: '72°',
+  weatherLabel: 'Partly cloudy',
+  weatherLine: '72° · Partly cloudy',
+  weatherHumidity: '48% humidity',
 };
 
 export const SAMPLE_IDLE_PREVIEW_DATA = {

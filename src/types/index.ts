@@ -29,6 +29,8 @@ export type UserDocument = {
   totpSecret?: string | null;
   /** SHA-256 hashes of one-time recovery codes */
   totpRecoveryHashes?: string[];
+  /** When set, a lead should finish a self-serve forgot-password request */
+  passwordResetRequestedAt?: string | null;
 };
 
 /** Activity log for account + schedule/org changes */

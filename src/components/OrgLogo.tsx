@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { colorFromString, monogramInitials } from '../lib/normalize';
+import { monogramInitials } from '../lib/normalize';
 
 type Props = {
   name: string;
@@ -33,13 +33,13 @@ export function OrgLogo({ name, logoUrl, size, className }: Props) {
   }
 
   const initials = monogramInitials(name);
-  const bg = colorFromString(name);
 
   return (
     <div
       className={['org-monogram', className].filter(Boolean).join(' ')}
-      style={{ ...style, background: bg }}
+      style={style}
       aria-hidden
+      title={name}
     >
       {initials}
     </div>

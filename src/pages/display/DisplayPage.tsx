@@ -5,6 +5,7 @@ import { TemplateCanvas } from '../../components/cardTemplate/TemplateCanvas';
 import { DisplayKioskControls } from '../../components/DisplayKioskControls';
 import { useScreenPresence } from '../../hooks/useScreenPresence';
 import { useEnsureTodaySchedule } from '../../hooks/useEnsureTodaySchedule';
+import { useCharlotteWeather } from '../../hooks/useCharlotteWeather';
 import {
   ensureSeedTemplates,
   resolveEventLayout,
@@ -22,6 +23,7 @@ import {
   formatLongDate,
   formatTimeRange,
 } from '../../lib/time';
+import { weatherPreviewFields } from '../../lib/weather';
 import type { CardTemplate } from '../../types/templates';
 import type { DisplayEventSnapshot, RoomDisplayDoc } from '../../types';
 import { SHERATON_LOGO } from '../../lib/brandAssets';
@@ -61,6 +63,8 @@ export function DisplayPage() {
     !embed && slug && exists !== false ? ['rooms', slug] : null,
   );
   useEnsureTodaySchedule(exists !== false);
+  const weather = useCharlotteWeather(exists !== false);
+  const wxFields = weatherPreviewFields(weather);
 
   useEffect(() => {
     if (!embed) return;
@@ -199,6 +203,7 @@ export function DisplayPage() {
         footerRight: 'Guest services · Lobby level',
         nowClock: formatClock(now),
         nowDate: formatLongDate(now),
+        ...wxFields,
       };
       return (
         <>
@@ -253,6 +258,7 @@ export function DisplayPage() {
     footerRight: 'Restrooms and elevators to the right',
     nowClock: formatClock(now),
     nowDate: formatLongDate(now),
+    ...wxFields,
   };
 
   if (resolved) {

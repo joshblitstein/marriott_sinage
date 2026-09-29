@@ -71,6 +71,7 @@ export async function ensureSeedTemplates(db: Firestore): Promise<void> {
   const snap = await getDocs(collection(db, TEMPLATES_COL));
   if (!snap.empty) {
     await ensureIdleAndEventDefaults(db);
+    await repairDefaultLayouts(db);
     return;
   }
 
@@ -106,8 +107,107 @@ export async function ensureSeedTemplates(db: Firestore): Promise<void> {
     {
       idleTemplateId: idle.id,
       defaultTemplateId: classic.id,
+      layoutSeedVersion: LAYOUT_SEED_VERSION,
       updatedAt: new Date().toISOString(),
-    } satisfies TemplateSettings,
+    } satisfies TemplateSettings & { layoutSeedVersion: number },
+    { merge: true },
+  );
+}
+
+/** Bump when seed layouts change and should replace published defaults. */
+const LAYOUT_SEED_VERSION = 2;
+
+function layoutOverlapsSchedule(
+  elements: import('../types/templates').TemplateBox[],
+): boolean {
+  const schedule = elements.find((e) => e.kind === 'scheduleList');
+  if (!schedule) return false;
+  const leftKinds = new Set([
+    'orgName',
+    'eventTitle',
+    'timeRange',
+    'roomName',
+    'nextUp',
+    'orgLogo',
+  ]);
+  return elements.some(
+    (e) => leftKinds.has(e.kind) && e.x < schedule.x && e.x + e.w > schedule.x + 0.5,
+  );
+}
+
+function clampElementsLeftOfSchedule(
+  elements: import('../types/templates').TemplateBox[],
+): import('../types/templates').TemplateBox[] {
+  const schedule = elements.find((e) => e.kind === 'scheduleList');
+  if (!schedule) return elements;
+  const maxRight = schedule.x - 2;
+  return elements.map((e) => {
+    if (e.kind === 'scheduleList') {
+      return {
+        ...e,
+        fontSize: Math.max(e.fontSize ?? 0, 30),
+      };
+    }
+    if (e.x >= schedule.x) return e;
+    if (e.x + e.w <= maxRight) return e;
+    return { ...e, w: Math.max(8, maxRight - e.x) };
+  });
+}
+
+/**
+ * Fix overlapping left-column vs schedule layouts on existing installs,
+ * and refresh known seed templates to current defaults.
+ */
+export async function repairDefaultLayouts(db: Firestore): Promise<void> {
+  const settingsRef = doc(db, 'settings', TEMPLATE_SETTINGS_DOC);
+  const settingsSnap = await getDoc(settingsRef);
+  const version = Number(settingsSnap.data()?.layoutSeedVersion ?? 0);
+  if (version >= LAYOUT_SEED_VERSION) return;
+
+  const snap = await getDocs(collection(db, TEMPLATES_COL));
+  const now = new Date().toISOString();
+
+  for (const d of snap.docs) {
+    const t = { id: d.id, ...d.data() } as CardTemplate;
+    let elements = t.published?.elements ?? t.draft?.elements ?? null;
+    if (!elements?.length) continue;
+
+    if (
+      t.name === 'Classic Oyster' ||
+      t.name === 'Charcoal Night' ||
+      t.name === 'Oyster Bold'
+    ) {
+      elements = classicLayoutElements();
+    } else if (t.name === 'Cards Panel' || t.name === 'Steel Gray') {
+      elements = cardsLayoutElements();
+    } else if (layoutOverlapsSchedule(elements)) {
+      elements = clampElementsLeftOfSchedule(elements);
+    } else {
+      // Still bump tiny schedule fonts on any published layout
+      const bumped = elements.map((e) =>
+        e.kind === 'scheduleList' && (e.fontSize == null || e.fontSize < 28)
+          ? { ...e, fontSize: 30 }
+          : e,
+      );
+      if (bumped.every((e, i) => e === elements![i])) continue;
+      elements = bumped;
+    }
+
+    const layout = layoutFromElements(elements);
+    await setDoc(
+      doc(db, TEMPLATES_COL, t.id),
+      {
+        draft: layout,
+        published: layout,
+        updatedAt: now,
+      },
+      { merge: true },
+    );
+  }
+
+  await setDoc(
+    settingsRef,
+    { layoutSeedVersion: LAYOUT_SEED_VERSION, updatedAt: now },
     { merge: true },
   );
 }

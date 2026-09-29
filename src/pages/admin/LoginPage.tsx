@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function LoginPage() {
@@ -127,6 +127,9 @@ export function LoginPage() {
           <button type="submit" disabled={!configured || submitting}>
             {submitting ? 'Signing in…' : 'Sign in'}
           </button>
+          <Link to="/admin/forgot-password" className="login-form__link">
+            Forgot password?
+          </Link>
         </form>
       ) : (
         <form onSubmit={(e) => void handleTotp(e)} className="login-form">

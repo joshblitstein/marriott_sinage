@@ -5,6 +5,8 @@ export const CHARLOTTE_LON = -80.8431;
 export type CharlotteWeather = {
   tempF: number;
   label: string;
+  /** Relative humidity % when available */
+  humidity: number | null;
   fetchedAt: string;
 };
 
@@ -47,7 +49,10 @@ function readCache(): CharlotteWeather | null {
     if (Date.now() - new Date(parsed.fetchedAt).getTime() > CACHE_MS) {
       return null;
     }
-    return parsed;
+    return {
+      ...parsed,
+      humidity: parsed.humidity ?? null,
+    };
   } catch {
     return null;
   }
@@ -87,22 +92,28 @@ export async function fetchCharlotteWeather(): Promise<CharlotteWeather> {
   const url = new URL('https://api.open-meteo.com/v1/forecast');
   url.searchParams.set('latitude', String(CHARLOTTE_LAT));
   url.searchParams.set('longitude', String(CHARLOTTE_LON));
-  url.searchParams.set('current', 'temperature_2m,weather_code');
+  url.searchParams.set('current', 'temperature_2m,weather_code,relative_humidity_2m');
   url.searchParams.set('temperature_unit', 'fahrenheit');
   url.searchParams.set('timezone', 'America/New_York');
 
   const [res, pm25] = await Promise.all([fetch(url.toString()), fetchPm25()]);
   if (!res.ok) throw new Error(`Weather ${res.status}`);
   const data = (await res.json()) as {
-    current?: { temperature_2m?: number; weather_code?: number };
+    current?: {
+      temperature_2m?: number;
+      weather_code?: number;
+      relative_humidity_2m?: number;
+    };
   };
   const temp = data.current?.temperature_2m;
   const code = data.current?.weather_code ?? 0;
+  const humidityRaw = data.current?.relative_humidity_2m;
   if (!Number.isFinite(temp)) throw new Error('Weather missing temp');
 
   const wx: CharlotteWeather = {
     tempF: Math.round(temp as number),
     label: labelWithAirQuality(labelForCode(code), pm25),
+    humidity: Number.isFinite(humidityRaw) ? Math.round(humidityRaw as number) : null,
     fetchedAt: new Date().toISOString(),
   };
   writeCache(wx);
@@ -112,4 +123,28 @@ export async function fetchCharlotteWeather(): Promise<CharlotteWeather> {
 export function formatWeatherLine(wx: CharlotteWeather | null): string | null {
   if (!wx) return null;
   return `${wx.tempF}° · ${wx.label}`;
+}
+
+/** Fields for room-card template widgets */
+export function weatherPreviewFields(wx: CharlotteWeather | null): {
+  weatherTemp: string;
+  weatherLabel: string;
+  weatherLine: string;
+  weatherHumidity: string;
+} {
+  if (!wx) {
+    return {
+      weatherTemp: '',
+      weatherLabel: '',
+      weatherLine: '',
+      weatherHumidity: '',
+    };
+  }
+  return {
+    weatherTemp: `${wx.tempF}°`,
+    weatherLabel: wx.label,
+    weatherLine: formatWeatherLine(wx) ?? '',
+    weatherHumidity:
+      wx.humidity != null ? `${wx.humidity}% humidity` : '',
+  };
 }
