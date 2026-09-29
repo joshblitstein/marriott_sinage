@@ -1,29 +1,34 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Libre+Baskerville:wght@400;700&display=swap');
+/* GT Super Display / Akhbar are licensed Sheraton faces (SAL).
+   Fraunces + Source Sans 3 are web stand-ins matching weight & character. */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,400&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&display=swap');
 
 :root {
   color-scheme: light;
-  --bg: #ececec;
+  /* Digital standard palette — Brand Book §3.3 Color for Digital */
+  --bg: #f4f4f4;
   --surface: #ffffff;
-  --ink: #111111;
-  --muted: #6b6b6b;
-  --line: #d0d0d0;
-  --accent: #0f6e7a;
+  --ink: #1c1c1c;
+  --muted: #878686;
+  --line: #e2e2e0;
+  --accent: #6f625d;
   --now: #22c55e;
-  --welcome: #b4234a;
+  --welcome: #e1c0be;
   --status-red: #c62828;
   --status-blue: #1565c0;
-  /* Sheraton brand book — Color Variants (approx. from published guidance).
-     Warm Tungsten on Oyster is the primary logo colorway.
-     Official Marriott PNGs / Pantone values should replace placeholders. */
-  --sheraton-oyster: #ede8e2;
-  --sheraton-oyster-deep: #e2dbd3;
-  --sheraton-tungsten: #3a3432;
-  --sheraton-tungsten-soft: #6e655f;
+  /* Core & Grand — Brand Book HEX (Warm Tungsten / Graphite / French Gray / Oyster / Lilac / Champagne) */
+  --sheraton-oyster: #efeae4;
+  --sheraton-oyster-deep: #e5dfd6;
+  --sheraton-tungsten: #6f625d;
+  --sheraton-tungsten-soft: #878686;
+  --sheraton-graphite: #3a3a3a;
   --sheraton-charcoal: #3a3a3a;
-  --sheraton-steel: #868686;
-  --sheraton-digital: #726060;
-  --font-sans: 'DM Sans', 'Segoe UI', sans-serif;
-  --font-serif: 'Libre Baskerville', Georgia, serif;
+  --sheraton-steel: #878686;
+  --sheraton-lilac: #beadd1;
+  --sheraton-champagne: #f7d6b4;
+  --sheraton-link: #8766a9;
+  --sheraton-digital: #6f625d;
+  --font-sans: 'Source Sans 3', 'Segoe UI', sans-serif;
+  --font-serif: 'Fraunces', 'Times New Roman', serif;
   font-family: var(--font-sans);
   color: var(--ink);
   background: var(--bg);
@@ -104,16 +109,17 @@ textarea {
 
 button {
   cursor: pointer;
-  border: 1px solid var(--line);
-  background: var(--ink);
+  border: 1px solid var(--sheraton-tungsten);
+  background: var(--sheraton-tungsten);
   color: #fff;
   padding: 0.55rem 1rem;
-  border-radius: 4px;
+  border-radius: 2px;
 }
 
 button.secondary {
-  background: var(--surface);
+  background: transparent;
   color: var(--ink);
+  border-color: var(--ink);
 }
 
 button:disabled {
@@ -135,6 +141,15 @@ textarea {
   max-width: 420px;
   margin: 0 auto;
   padding: 3rem 1.25rem;
+}
+
+.admin-login__logo {
+  display: block;
+  width: min(12rem, 70%);
+  height: auto;
+  aspect-ratio: 376 / 211;
+  object-fit: contain;
+  margin: 0 0 1.25rem;
 }
 
 .banner {
@@ -289,18 +304,19 @@ textarea {
   }
 }
 
-/* Admin — Display Hub */
+/* Admin — Display Hub (digital brand palette) */
 .hub {
-  --hub-bg: #f2f2f2;
+  --hub-bg: #f4f4f4;
   --hub-ink: #1c1c1c;
-  --hub-muted: #6e6e6e;
+  --hub-muted: #878686;
   --hub-line: #e2e2e0;
-  --hub-card: #e8e8e8;
-  --hub-teal: #0a7c96;
-  --hub-teal-deep: #086578;
-  --hub-pink: #f3d6dc;
-  --hub-pink-ink: #a33b55;
-  --hub-city: #d7ebf1;
+  --hub-card: #efeae4;
+  --hub-teal: #6f625d;
+  --hub-teal-deep: #5a504c;
+  --hub-pink: #e1c0be;
+  --hub-pink-ink: #6f625d;
+  --hub-city: #beadd1;
+  --hub-champagne: #f7d6b4;
   min-height: 100vh;
   background: var(--hub-bg);
   color: var(--hub-ink);
@@ -319,40 +335,54 @@ textarea {
 
 .hub-chrome__nav-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem 1.75rem;
 }
 
 .hub-brand {
   display: inline-flex;
-  align-items: baseline;
-  gap: 0.35rem;
+  align-items: center;
+  gap: 0.55rem;
   white-space: nowrap;
   flex-shrink: 0;
   line-height: 1.2;
 }
 
+.hub-brand__logo {
+  display: block;
+  width: 1.85rem;
+  height: 1.85rem;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.hub-brand__copy {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
 .hub-brand strong {
   font-family: var(--font-serif);
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  letter-spacing: -0.01em;
+  font-size: 1.1rem;
+  font-weight: 300;
+  color: #6f625d;
+  letter-spacing: -0.02em;
 }
 
 .hub-brand__sep {
-  color: #b0b0ac;
+  color: #beadd1;
   font-family: var(--font-serif);
-  font-weight: 400;
-  font-size: 1.05rem;
+  font-weight: 300;
+  font-size: 1.1rem;
 }
 
 .hub-brand__hub {
   font-family: var(--font-sans);
   font-size: 0.95rem;
-  font-weight: 500;
-  color: #9a9a96;
+  font-weight: 400;
+  color: #878686;
   letter-spacing: 0;
 }
 
@@ -371,9 +401,9 @@ textarea {
 }
 
 .hub-nav__link {
-  color: #3a3a3a;
+  color: #6f625d;
   text-decoration: none;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: 0.88rem;
   padding: 0.1rem 0 0.35rem;
   border-bottom: 1.5px solid transparent;
@@ -445,7 +475,7 @@ textarea {
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
-  border-radius: 4px;
+  border-radius: 2px;
   padding: 0.42rem 0.95rem;
   font-size: 0.88rem;
   font-weight: 600;
@@ -463,41 +493,42 @@ textarea {
 }
 
 .hub-btn--primary {
-  background: var(--hub-teal);
-  color: #fff;
-  border-color: var(--hub-teal);
+  background: var(--hub-champagne, #f7d6b4);
+  color: var(--hub-ink);
+  border-color: var(--hub-champagne, #f7d6b4);
 }
 
 .hub-btn--primary:hover {
-  background: var(--hub-teal-deep);
+  background: #f0c89a;
+  border-color: #f0c89a;
 }
 
 .hub-btn--soft {
-  background: #efefef;
-  color: #2a2a2a;
-  border-color: #d8d8d8;
+  background: #efeae4;
+  color: #3a3a3a;
+  border-color: #e2e2e0;
 }
 
 .hub-btn--soft:hover {
-  background: #e8e8e8;
+  background: #e5dfd6;
 }
 
 .hub-btn--soft.is-active {
-  background: #e4eef1;
+  background: color-mix(in srgb, var(--hub-champagne) 45%, #fff);
   color: var(--hub-teal-deep);
-  border-color: #b9d4dc;
+  border-color: var(--hub-champagne);
 }
 
 .hub-btn--ghost {
   background: #fff;
-  color: #3d3d3a;
-  border-color: #d5d5d0;
+  color: #1c1c1c;
+  border-color: #1c1c1c;
 }
 
 .hub-btn--danger {
   background: #fff;
-  color: #b4234a;
-  border-color: #e8b4c0;
+  color: #6f625d;
+  border-color: #e1c0be;
 }
 
 .hub-link {
@@ -1830,11 +1861,11 @@ textarea {
 .door-sign__level,
 .door-cards__level {
   margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
+  text-transform: none;
+  letter-spacing: 0.04em;
   font-size: 0.95rem;
   font-weight: 500;
-  color: var(--sheraton-tungsten-soft);
+  color: var(--sheraton-graphite, #3a3a3a);
 }
 
 .door-sign__clock {
@@ -1884,8 +1915,9 @@ textarea {
   margin: 0;
   font-family: var(--font-serif);
   font-size: clamp(2.5rem, 5.2vw, 4.1rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-weight: 300;
+  letter-spacing: -0.025em;
+  line-height: 0.98;
   color: var(--sheraton-tungsten);
 }
 
@@ -1898,10 +1930,10 @@ textarea {
   align-items: center;
   gap: 0.45rem;
   margin: 1rem 0 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
+  text-transform: none;
+  letter-spacing: 0.04em;
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--sheraton-tungsten);
   animation: nowBlink 1.2s ease-in-out infinite;
 }
@@ -1949,14 +1981,17 @@ textarea {
   margin: 0;
   font-family: var(--font-serif);
   font-size: clamp(2rem, 3.8vw, 3rem);
-  line-height: 1.15;
+  font-weight: 300;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
   color: var(--sheraton-tungsten);
 }
 
 .door-sign__title {
   margin: 0.35rem 0 0;
   font-size: clamp(1.25rem, 2.3vw, 1.65rem);
-  color: var(--sheraton-tungsten);
+  font-weight: 400;
+  color: var(--sheraton-graphite, #3a3a3a);
 }
 
 .door-sign__time,
@@ -2068,9 +2103,9 @@ textarea {
   margin: 0.15rem 0 0.35rem;
   font-family: var(--font-serif);
   font-size: clamp(2.45rem, 5vw, 3.85rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.05;
+  font-weight: 300;
+  letter-spacing: -0.025em;
+  line-height: 0.98;
   color: var(--sheraton-tungsten);
 }
 
@@ -2127,7 +2162,9 @@ textarea {
   margin: 0.15rem 0 0;
   font-family: var(--font-serif);
   font-size: clamp(1.95rem, 3.6vw, 2.85rem);
-  line-height: 1.12;
+  font-weight: 300;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
   color: var(--sheraton-tungsten);
 }
 
@@ -2162,9 +2199,9 @@ textarea {
 
 .door-cards__schedule-label {
   margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 0.9rem;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 0.95rem;
   line-height: 1.2;
   color: var(--sheraton-tungsten-soft);
   font-weight: 600;
@@ -2246,10 +2283,10 @@ textarea {
 
 .sheraton-mark__logo {
   display: block;
-  height: clamp(2.75rem, 5.5vh, 4rem);
+  height: clamp(2.75rem, 6.5vh, 4.5rem);
   width: auto;
-  max-width: min(22rem, 50vw);
-  aspect-ratio: 480 / 120;
+  max-width: min(16rem, 42vw);
+  aspect-ratio: 376 / 211;
   object-fit: contain;
   object-position: left center;
 }
@@ -2297,9 +2334,10 @@ textarea {
 
 .door-empty__logo {
   display: block;
-  width: min(26rem, 72vw);
+  width: min(18rem, 48vw);
   height: auto;
-  max-height: min(8.5rem, 18vh);
+  max-height: min(10rem, 22vh);
+  aspect-ratio: 376 / 211;
   object-fit: contain;
   margin-bottom: clamp(1.5rem, 4vh, 2.5rem);
 }
@@ -2318,22 +2356,22 @@ textarea {
   margin: 0;
   font-family: var(--font-serif);
   font-size: clamp(3.75rem, 8.5vw, 6.5rem);
-  font-weight: 700;
-  line-height: 1.12;
+  font-weight: 300;
+  line-height: 0.98;
   color: var(--sheraton-tungsten);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.025em;
   max-width: 16ch;
 }
 
 .door-empty__level {
   margin: 1.4rem 0 0;
-  font-family: var(--font-serif);
-  font-size: clamp(1.35rem, 2.8vw, 1.95rem);
+  font-family: var(--font-sans);
+  font-size: clamp(1.15rem, 2.4vw, 1.55rem);
   font-weight: 400;
-  letter-spacing: 0.38em;
-  text-indent: 0.38em;
-  text-transform: uppercase;
-  color: var(--sheraton-tungsten-soft);
+  letter-spacing: 0.08em;
+  text-indent: 0;
+  text-transform: none;
+  color: var(--sheraton-graphite, #3a3a3a);
 }
 
 .org-logo,
@@ -2424,7 +2462,7 @@ textarea {
   height: 100%;
   min-height: 100%;
   margin: 0;
-  background: var(--sheraton-oyster, #ede8e2);
+  background: var(--sheraton-oyster, #efeae4);
 }
 
 .lobby-stage--embed .lobby-stage__slide,
@@ -2480,6 +2518,20 @@ textarea {
   justify-content: center;
 }
 
+.lobby-brand__logo {
+  display: block;
+  height: clamp(3.25rem, 7vh, 5rem);
+  width: auto;
+  max-width: min(18rem, 55vw);
+  aspect-ratio: 376 / 211;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.lobby-brand--center .lobby-brand__logo {
+  object-position: center;
+}
+
 .lobby-brand__emblem {
   width: 3.1rem;
   height: 3.1rem;
@@ -2514,11 +2566,11 @@ textarea {
 }
 
 .lobby-status.is-session {
-  color: #0f6e7a;
+  color: var(--sheraton-tungsten);
 }
 
 .lobby-status.is-setup {
-  color: #c43b4b;
+  color: #a67c7a;
 }
 
 .lobby-status.is-later {
@@ -2586,13 +2638,14 @@ textarea {
   margin: 0;
   font-family: var(--font-serif);
   font-size: clamp(2.2rem, 5.2vw, 3.6rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-weight: 300;
+  letter-spacing: -0.025em;
+  line-height: 0.98;
   color: var(--sheraton-tungsten, var(--ink));
 }
 
 .lobby-dir__rule {
-  height: 2px;
+  height: 1px;
   background: var(--sheraton-tungsten, var(--ink));
   margin: 0.85rem 0 0.65rem;
 }
@@ -2649,15 +2702,16 @@ textarea {
   margin: 0;
   font-family: var(--font-serif);
   font-size: clamp(1.35rem, 2.8vw, 1.85rem);
-  font-weight: 700;
-  line-height: 1.2;
+  font-weight: 300;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
   color: var(--sheraton-tungsten, var(--ink));
 }
 
 .lobby-dir__event-sub {
   margin: 0.3rem 0 0;
   font-size: clamp(1rem, 1.8vw, 1.2rem);
-  color: var(--sheraton-tungsten, var(--ink));
+  color: var(--sheraton-graphite, #3a3a3a);
 }
 
 .lobby-dir__event-detail {
@@ -2670,14 +2724,17 @@ textarea {
   flex-shrink: 0;
   width: clamp(3.2rem, 6vw, 4.4rem);
   height: clamp(3.2rem, 6vw, 4.4rem);
-  border-radius: 4px;
-  background: var(--sheraton-tungsten);
-  color: var(--sheraton-oyster);
+  border-radius: 0;
+  background: transparent;
+  color: var(--sheraton-tungsten);
   display: grid;
   place-items: center;
-  font-family: var(--font-serif);
-  font-weight: 700;
-  font-size: clamp(1.25rem, 2.4vw, 1.7rem);
+}
+
+.lobby-dir__hotel-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .lobby-dir__row-main .org-logo,
@@ -2757,18 +2814,21 @@ textarea {
 
 .lobby-welcome__label {
   margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  text-transform: none;
+  letter-spacing: 0.04em;
   font-size: 0.95rem;
-  color: #5b7c8a;
-  font-weight: 700;
+  color: var(--sheraton-tungsten-soft);
+  font-weight: 600;
 }
 
 .lobby-welcome__room {
   margin: 0.35rem 0 0;
   font-size: clamp(1.95rem, 4vw, 2.85rem);
-  font-weight: 700;
-  color: #0f6e7a;
+  font-weight: 300;
+  font-family: var(--font-serif);
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+  color: var(--sheraton-tungsten);
 }
 
 .lobby-welcome__time {
@@ -3125,12 +3185,12 @@ textarea {
 .kiosk-controls__prompt button {
   appearance: none;
   border: 0;
-  background: #0f6e7a;
-  color: #fff;
+  background: var(--sheraton-champagne);
+  color: var(--sheraton-graphite);
   font: inherit;
   font-weight: 600;
   padding: 0.4rem 0.75rem;
-  border-radius: 4px;
+  border-radius: 2px;
   cursor: pointer;
 }
 
@@ -4285,7 +4345,7 @@ textarea {
   height: 100dvh;
   min-height: 100vh;
   min-height: 100dvh;
-  background: var(--sheraton-oyster, #ede8e2);
+  background: var(--sheraton-oyster, #efeae4);
   overflow: hidden;
 }
 
@@ -4303,7 +4363,7 @@ html.display-embed .door-template-stage {
   height: 100%;
   overflow: hidden;
   font-family: var(--tpl-font-body, var(--font-sans));
-  color: var(--tpl-ink, #3a3432);
+  color: var(--tpl-ink, #3a3a3a);
   /* Font sizes in templates are authored for 1080p; scale with viewport height */
   font-size: calc(100dvh / 1080 * 16px);
   container-type: size;
@@ -4342,8 +4402,9 @@ html.display-embed .door-template-stage {
 .tpl-room,
 .tpl-org {
   font-family: var(--tpl-font-display, var(--font-serif));
-  font-weight: 700;
-  line-height: 1.1;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 0.98;
   width: 100%;
 }
 
@@ -4355,13 +4416,13 @@ html.display-embed .door-template-stage {
 .tpl-custom {
   width: 100%;
   line-height: 1.2;
-  color: var(--tpl-muted, #6e655f);
+  color: var(--tpl-muted, #878686);
 }
 
 .tpl-room,
 .tpl-org,
 .tpl-title {
-  color: var(--tpl-ink, #3a3432);
+  color: var(--tpl-ink, #6f625d);
 }
 
 .tpl-logo {
@@ -4505,18 +4566,18 @@ html.display-embed .door-template-stage {
 }
 
 .templates-page__tab:not(.is-active) .templates-page__pill {
-  background: #e4eef1;
+  background: #efeae4;
   color: var(--hub-teal-deep);
 }
 
 .templates-page__pill--draft {
-  background: #f0ebe6 !important;
-  color: #6e655f !important;
+  background: #efeae4 !important;
+  color: #6f625d !important;
 }
 
 .templates-page__pill--default {
-  background: #e8f5e9 !important;
-  color: #2f6b4f !important;
+  background: #f7d6b4 !important;
+  color: #3a3a3a !important;
 }
 
 .templates-page__name-row {

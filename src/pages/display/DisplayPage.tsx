@@ -24,9 +24,9 @@ import {
 } from '../../lib/time';
 import type { CardTemplate } from '../../types/templates';
 import type { DisplayEventSnapshot, RoomDisplayDoc } from '../../types';
+import { SHERATON_LOGO } from '../../lib/brandAssets';
 
 const CACHE_PREFIX = 'signage_display_';
-const SHERATON_LOGO = '/brand/sheraton-logo.svg';
 
 type RoomDoc = {
   name?: string;

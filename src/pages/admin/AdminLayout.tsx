@@ -100,9 +100,16 @@ export function AdminLayout() {
         <div className="hub-chrome__inner">
           <div className="hub-chrome__nav-row">
             <div className="hub-brand">
-              <strong>Sheraton Charlotte</strong>
-              <span className="hub-brand__sep">·</span>
-              <span className="hub-brand__hub">Display Hub</span>
+              <img
+                className="hub-brand__logo"
+                src="/brand/sheraton-crest-tungsten.png"
+                alt=""
+              />
+              <div className="hub-brand__copy">
+                <strong>Sheraton Charlotte</strong>
+                <span className="hub-brand__sep">·</span>
+                <span className="hub-brand__hub">Display Hub</span>
+              </div>
             </div>
             <nav className="hub-nav" aria-label="Admin">
               {navItems.map((item) =>

@@ -70,13 +70,13 @@ const SECTION_DEFS: {
 export function levelLabelForRoom(room: Pick<Room, 'id'>): string {
   for (const def of SECTION_DEFS) {
     if (def.match(room as Room)) {
-      if (def.level === 'Ballroom level') return 'LEVEL 2';
-      if (def.level === 'Meeting level') return 'LEVEL 1';
-      if (def.level === 'Lobby level') return 'LOBBY LEVEL';
-      return def.level.toUpperCase();
+      if (def.level === 'Ballroom level') return 'Level 2';
+      if (def.level === 'Meeting level') return 'Level 1';
+      if (def.level === 'Lobby level') return 'Lobby Level';
+      return def.level;
     }
   }
-  return 'LEVEL 2';
+  return 'Level 2';
 }
 
 export function groupRoomsBySection<T extends Room>(rooms: T[]): RoomSection<T>[] {

@@ -24,9 +24,9 @@ export function classicLayoutElements(): TemplateBox[] {
   return [
     box('brand', 3, 3, 28, 8),
     box('level', 72, 3.5, 25, 6, { textAlign: 'right', fontSize: 22 }),
-    box('roomName', 3, 14, 48, 12, { fontSize: 72, fontWeight: 700 }),
+    box('roomName', 3, 14, 48, 12, { fontSize: 72, fontWeight: 300 }),
     box('orgLogo', 3, 30, 12, 22),
-    box('orgName', 17, 30, 40, 8, { fontSize: 48, fontWeight: 700 }),
+    box('orgName', 17, 30, 40, 8, { fontSize: 48, fontWeight: 300 }),
     box('timeRange', 17, 39, 40, 6, { fontSize: 28 }),
     box('eventTitle', 17, 46, 40, 6, { fontSize: 26 }),
     box('nextUp', 3, 58, 48, 8, { fontSize: 24 }),
@@ -41,8 +41,8 @@ export function cardsLayoutElements(): TemplateBox[] {
     box('brand', 3, 3, 26, 8),
     box('clock', 78, 3.5, 19, 6, { textAlign: 'right', fontSize: 28 }),
     box('level', 3, 11, 30, 5, { fontSize: 20 }),
-    box('roomName', 3, 16, 55, 10, { fontSize: 64, fontWeight: 700 }),
-    box('orgName', 5, 32, 42, 8, { fontSize: 42, fontWeight: 700 }),
+    box('roomName', 3, 16, 55, 10, { fontSize: 64, fontWeight: 300 }),
+    box('orgName', 5, 32, 42, 8, { fontSize: 42, fontWeight: 300 }),
     box('timeRange', 5, 42, 42, 5, { fontSize: 24 }),
     box('eventTitle', 5, 48, 42, 5, { fontSize: 22 }),
     box('orgLogo', 5, 56, 14, 22),
@@ -59,7 +59,7 @@ export function idleLayoutElements(): TemplateBox[] {
     box('roomName', 8, 48, 84, 18, {
       textAlign: 'center',
       fontSize: 92,
-      fontWeight: 700,
+      fontWeight: 300,
     }),
     box('level', 20, 70, 60, 8, { textAlign: 'center', fontSize: 30 }),
   ];
@@ -71,7 +71,7 @@ export function layoutFromElements(elements: TemplateBox[]): TemplateLayout {
 
 export const SAMPLE_PREVIEW_DATA = {
   roomName: 'Symphony 1',
-  level: 'LEVEL 2',
+  level: 'Level 2',
   orgDisplayName: 'Charlotte Touchdown Club',
   logoUrl: null as string | null,
   eventTitle: 'Lunch Buffet',

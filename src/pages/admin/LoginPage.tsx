@@ -76,6 +76,11 @@ export function LoginPage() {
 
   return (
     <div className="app-shell admin-login">
+      <img
+        className="admin-login__logo"
+        src="/brand/sheraton-logo-tungsten.png"
+        alt="Sheraton"
+      />
       <h1>Signage Admin</h1>
       <p>
         {awaitingTotp

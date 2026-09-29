@@ -14,6 +14,7 @@ import {
   formatTimeRange,
 } from '../../lib/time';
 import { formatWeatherLine } from '../../lib/weather';
+import { BRAND_CREST, SHERATON_LOGO } from '../../lib/brandAssets';
 import type {
   DisplayEventSnapshot,
   LobbyDirectorySettings,
@@ -246,7 +247,7 @@ function LobbyDirectory({
         <div className="lobby-dir__rule" />
         <div className="lobby-dir__meta">
           <span className="lobby-dir__today">Today</span>
-          <span>LEVEL 2 · GRAND FOYER</span>
+          <span>Level 2 · Grand Foyer</span>
         </div>
       </div>
 
@@ -279,7 +280,7 @@ function LobbyDirectory({
           <li key={item.id} className="lobby-dir__row lobby-dir__row--hotel">
             <div className="lobby-dir__row-main">
               <div className="lobby-dir__hotel-mark" aria-hidden>
-                {(item.section || 'H').slice(0, 1).toUpperCase()}
+                <img src={BRAND_CREST.tungsten} alt="" />
               </div>
               <div className="lobby-dir__copy">
                 <h2 className="lobby-dir__event-title">{item.title}</h2>
@@ -564,13 +565,11 @@ function LobbyAmenities({
 function SheratonBrand({ center }: { center?: boolean }) {
   return (
     <div className={center ? 'lobby-brand lobby-brand--center' : 'lobby-brand'}>
-      <div className="lobby-brand__emblem" aria-hidden>
-        S
-      </div>
-      <div className="lobby-brand__text">
-        <strong>SHERATON</strong>
-        <span>Charlotte Hotel</span>
-      </div>
+      <img
+        className="lobby-brand__logo"
+        src={SHERATON_LOGO}
+        alt="Sheraton"
+      />
     </div>
   );
 }
