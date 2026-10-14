@@ -180,7 +180,6 @@ export function DisplayPage() {
             alt="Sheraton"
           />
           <div className="door-inactive__main">
-            <p className="door-inactive__status">Room inactive</p>
             <h1 className="door-inactive__room">
               {data.displayName || slug}
             </h1>

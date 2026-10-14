@@ -2462,13 +2462,13 @@ textarea {
 
 .door-inactive__room {
   margin: 0;
-  font-family: var(--font-sans);
-  font-weight: 500;
-  font-size: clamp(1.75rem, 4.5vw, 3.25rem);
-  line-height: 1.15;
-  letter-spacing: 0.02em;
-  color: var(--sheraton-graphite, #3a3a3a);
-  max-width: 20ch;
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-size: clamp(5rem, 16vw, 12rem);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  color: var(--sheraton-tungsten);
+  max-width: 12ch;
 }
 
 html.display-embed .door-inactive {
