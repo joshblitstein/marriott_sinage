@@ -173,11 +173,18 @@ export function DisplayPage() {
     return (
       <>
         {!embed && <DisplayKioskControls />}
-        <div className="door-empty">
-          <img className="door-empty__logo" src={SHERATON_LOGO} alt="Sheraton" />
-          <div className="door-empty__rule" aria-hidden />
-          <h1 className="door-empty__room">{data.displayName || slug}</h1>
-          <p className="door-empty__level">Room inactive</p>
+        <div className="door-inactive">
+          <img
+            className="door-inactive__logo"
+            src={SHERATON_LOGO}
+            alt="Sheraton"
+          />
+          <div className="door-inactive__main">
+            <p className="door-inactive__status">Room inactive</p>
+            <h1 className="door-inactive__room">
+              {data.displayName || slug}
+            </h1>
+          </div>
         </div>
       </>
     );
